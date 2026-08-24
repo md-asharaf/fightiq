@@ -2,6 +2,7 @@ from collections.abc import AsyncGenerator
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from pytest import MonkeyPatch
 
 from app.core.dependencies import get_db, get_embedder
 from app.main import app
@@ -15,8 +16,10 @@ async def override_get_db():
 
 # Mock get_embedder
 def override_get_embedder():
-    from unittest.mock import MagicMock
-    return MagicMock()
+    from unittest.mock import AsyncMock, MagicMock
+    mock = MagicMock()
+    mock.aembed_query = AsyncMock(return_value=[0.1] * 1536)
+    return mock
 
 
 app.dependency_overrides[get_db] = override_get_db
@@ -40,7 +43,7 @@ async def test_api_get_eval_results(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_api_run_evaluation_mock(client: AsyncClient, monkeypatch: pytest.MonkeyPatch):
+async def test_api_run_evaluation_mock(client: AsyncClient, monkeypatch: MonkeyPatch):
     """Test triggering an evaluation run with mocked eval engine."""
     import uuid
 
@@ -55,8 +58,8 @@ async def test_api_run_evaluation_mock(client: AsyncClient, monkeypatch: pytest.
             question_results=[],
         )
 
-    # Note: since run_evaluation is imported directly in eval.py, we patch it in the target module
-    monkeypatch.setattr("app.api.eval.run_evaluation", mock_run_evaluation)
+    # Note: since run_evaluation is imported directly in eval_service.py, we patch it in the target module
+    monkeypatch.setattr("app.services.eval_service.run_evaluation", mock_run_evaluation)
 
     response = await client.get("/api/eval/run")
     assert response.status_code == 200

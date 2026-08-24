@@ -13,6 +13,7 @@ from pydantic import ConfigDict
 from app.core.logging import get_logger
 from app.ingestion.embedder import Embedder
 from app.rag.vectorstore import similarity_search
+from sqlalchemy.ext.asyncio import AsyncSession
 
 log = get_logger(__name__)
 
@@ -22,7 +23,7 @@ class UFCRetriever(BaseRetriever):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    session: Any
+    session: AsyncSession
     embedder: Embedder
     k: int = 5
     category: str | None = None
