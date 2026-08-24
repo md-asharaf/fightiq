@@ -142,6 +142,7 @@ def get_chat_llm() -> BaseChatModel:
         model_name=settings.groq_model,
         api_key=SecretStr(settings.groq_api_key) if settings.groq_api_key else None,
         max_tokens=4096,
+        streaming=True,
         max_retries=1,
     )
 
@@ -150,6 +151,7 @@ def get_chat_llm() -> BaseChatModel:
         model_name=settings.groq_fallback_model,
         api_key=SecretStr(settings.groq_api_key) if settings.groq_api_key else None,
         max_tokens=4096,
+        streaming=True,
         max_retries=1,
     )
 
