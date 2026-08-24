@@ -77,19 +77,10 @@ def _fetch_full_text(topic: str) -> str | None:
         log.warning("Could not find content div", topic=topic)
         return None
 
-    paragraphs: list[str] = []
-    for element in content_div.children:
-        if hasattr(element, "name"):
-            if element.name == "p":
-                text = element.get_text(separator=" ").strip()
-                if len(text) > 60:
-                    paragraphs.append(text)
-            elif element.name in {"h2", "h3"}:
-                heading = element.get_text(separator=" ").strip()
-                if heading and heading not in {"Contents", "References", "External links"}:
-                    paragraphs.append(f"\n## {heading}\n")
+    from markdownify import markdownify as md
 
-    return "\n\n".join(paragraphs) if paragraphs else None
+    markdown_content = md(str(content_div), heading_style="ATX", tables=True, strip=["a", "img"])
+    return markdown_content.strip()
 
 
 def _fetch_generic_url(url: str) -> dict | None:
@@ -99,11 +90,11 @@ def _fetch_generic_url(url: str) -> dict | None:
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
 
-        # Basic text extraction
-        for tag in soup(["script", "style", "nav", "footer", "header"]):
-            tag.decompose()
+        # Try to find the main content, otherwise use body
+        main_content = soup.find("main") or soup.find("article") or soup.find("body") or soup
 
-        text = soup.get_text(separator="\n", strip=True)
+        from markdownify import markdownify as md
+        text = md(str(main_content), heading_style="ATX", tables=True, strip=["a", "img"]).strip()
         title_str = str(soup.title.string) if soup.title and soup.title.string else url
 
         return {
