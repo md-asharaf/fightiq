@@ -58,7 +58,7 @@ async def get_current_user(
     request: Request,
     db: AsyncSession = Depends(get_db)
 ) -> User | None:
-    token = request.cookies.get("better-auth.session_token")
+    token = request.cookies.get("better-auth.session_token") or request.cookies.get("__Secure-better-auth.session_token")
     if not token:
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
