@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from langchain_core.callbacks import (
     AsyncCallbackManagerForRetrieverRun,
     CallbackManagerForRetrieverRun,
@@ -7,7 +9,6 @@ from langchain_core.callbacks import (
 from langchain_core.documents import Document as LCDocument
 from langchain_core.retrievers import BaseRetriever
 from pydantic import ConfigDict
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.ingestion.embedder import Embedder
@@ -21,7 +22,7 @@ class UFCRetriever(BaseRetriever):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    session: AsyncSession
+    session: Any
     embedder: Embedder
     k: int = 5
     category: str | None = None
@@ -33,12 +34,13 @@ class UFCRetriever(BaseRetriever):
         *,
         run_manager: CallbackManagerForRetrieverRun,
     ) -> list[LCDocument]:
-        """Synchronous retrieval"""
-        raise NotImplementedError(
-            "UFCRetriever is async-only. Use _agent_relevant_documents().",
+        """Synchronous retrieval fallback."""
+        import asyncio
+        return asyncio.run(
+            self._aget_relevant_documents(query, run_manager=run_manager)  # type: ignore[arg-type]
         )
 
-    async def _agent_relevant_documents(
+    async def _aget_relevant_documents(
         self,
         query: str,
         *,

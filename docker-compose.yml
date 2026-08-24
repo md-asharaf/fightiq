@@ -25,7 +25,7 @@ services:
     container_name: fightiq-backend
     restart: unless-stopped
     env_file:
-      - .env
+      - ./backend/.env
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-fightiq}:${POSTGRES_PASSWORD:-fightiq_secret}@db:5432/${POSTGRES_DB:-fightiq}
     ports:
@@ -47,7 +47,7 @@ services:
     container_name: fightiq-frontend
     restart: unless-stopped
     env_file:
-      - .env
+      - ./frontend/.env
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
     ports:

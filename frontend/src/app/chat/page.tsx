@@ -1,120 +1,29 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { Send, Trash2 } from "lucide-react";
-import { ChatMessage, MessageProps } from "@/components/chat/ChatMessage";
+import { ChatMessage } from "@/components/chat/ChatMessage";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { ChatSource } from "@/types";
-
-const generateSessionId = () => `sess_${Math.random().toString(36).substr(2, 9)}`;
+import { useChat } from "@/hooks/useChat";
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<MessageProps[]>([]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState("");
+  const {
+    messages,
+    input,
+    setInput,
+    isLoading,
+    handleClear,
+    handleSend
+  } = useChat();
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSessionId(generateSessionId());
-
-    setMessages([
-      { role: "assistant", content: "Welcome to FightIQ! Ask me anything about UFC fighters, events, history, or rules." }
-    ]);
-  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
-
-  const handleClear = () => {
-    setSessionId(generateSessionId());
-    setMessages([
-      { role: "assistant", content: "Chat cleared. Start a new conversation!" }
-    ]);
-  };
-
-  const handleSend = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!input.trim() || isLoading) return;
-
-    const userMessage = input.trim();
-    setInput("");
-
-    setMessages(prev => [...prev, { role: "user", content: userMessage }]);
-    setIsLoading(true);
-
-    setMessages(prev => [...prev, { role: "assistant", content: "" }]);
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"}/chat/message`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          session_id: sessionId,
-          message: userMessage,
-        }),
-      });
-
-      if (!response.ok) throw new Error("Failed to connect to chat API");
-      if (!response.body) throw new Error("No response body");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-
-      let fullContent = "";
-      let sources: ChatSource[] = [];
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const dataStr = line.replace("data: ", "").trim();
-            if (dataStr === "[DONE]") {
-              continue;
-            }
-            try {
-              const data = JSON.parse(dataStr);
-              if (data.type === "chunk") {
-                fullContent += data.content;
-                setMessages(prev => {
-                  const newMsgs = [...prev];
-                  newMsgs[newMsgs.length - 1].content = fullContent;
-                  return newMsgs;
-                });
-              } else if (data.type === "sources") {
-                sources = data.sources;
-                setMessages(prev => {
-                  const newMsgs = [...prev];
-                  newMsgs[newMsgs.length - 1].sources = sources;
-                  return newMsgs;
-                });
-              }
-            } catch {
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error(error);
-      setMessages(prev => {
-        const newMsgs = [...prev];
-        newMsgs[newMsgs.length - 1].content = "Sorry, an error occurred while generating the response.";
-        return newMsgs;
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="container mx-auto p-4 md:p-8 flex-1 flex flex-col h-[calc(100vh-4rem)] max-w-4xl">

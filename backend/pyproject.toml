@@ -4,15 +4,12 @@ version = "0.1.0"
 description = "FightIQ UFC GenAI Knowledge & Quiz Platform — Backend API"
 requires-python = ">=3.12"
 dependencies = [
-    # ── Web framework ──────────────────────────────
     "fastapi[standard]>=0.115.0",
     "uvicorn[standard]>=0.32.0",
-    # ── Database ───────────────────────────────────
     "sqlalchemy[asyncio]>=2.0.36",
     "asyncpg>=0.30.0",
     "alembic>=1.14.0",
     "pgvector>=0.3.6",
-    # ── AI / LangChain ─────────────────────────────
     "langchain>=0.3.0",
     "langchain-google-genai>=2.0.0",
     "langchain-google-vertexai>=2.0.0",
@@ -20,19 +17,15 @@ dependencies = [
     "langchain-text-splitters>=0.3.0",
     "google-generativeai>=0.8.0",
     "ragas>=0.2.0",
-    # ── Settings / validation ──────────────────────
     "pydantic>=2.10.0",
     "pydantic-settings>=2.6.0",
     "python-multipart>=0.0.20",
-    # ── Utilities ──────────────────────────────────────────────────────
     "httpx>=0.28.0",
     "python-dotenv>=1.0.0",
     "tenacity>=9.0.0",
     "structlog>=25.0.0",
     "numpy>=2.2.0",
-    # ── Document parsing ───────────────────────────────────────────────
     "pypdf>=4.0.0",
-    # ── Web scraping ───────────────────────────────────────────────────
     "requests>=2.32.0",
     "beautifulsoup4>=4.12.0",
 ]
@@ -63,6 +56,7 @@ ignore = ["E501"]
 python_version = "3.12"
 strict = false
 ignore_missing_imports = true
+explicit_package_bases = true
 plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]

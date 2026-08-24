@@ -1,3 +1,5 @@
+import { ChatSource } from "@/types";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
@@ -37,4 +39,69 @@ export async function uploadFile(endpoint: string, file: File, metadata: Record<
   }
 
   return response.json();
+}
+
+
+export interface StreamChatCallbacks {
+  onChunk: (content: string) => void;
+  onSources: (sources: ChatSource[]) => void;
+  onError: (error: Error) => void;
+  onComplete: () => void;
+}
+
+export async function streamChat(
+  sessionId: string,
+  message: string,
+  callbacks: StreamChatCallbacks
+) {
+  const url = `${API_BASE_URL}/chat/message`;
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, message }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to connect to chat API");
+    }
+    if (!response.body) {
+      throw new Error("No response body");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let fullContent = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split("\n");
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const dataStr = line.replace("data: ", "").trim();
+          if (dataStr === "[DONE]") {
+            continue;
+          }
+          try {
+            const data = JSON.parse(dataStr);
+            if (data.type === "chunk") {
+              fullContent += data.content;
+              callbacks.onChunk(fullContent);
+            } else if (data.type === "sources") {
+              callbacks.onSources(data.sources);
+            }
+          } catch {
+            // Ignore parse errors on partial chunks
+          }
+        }
+      }
+    }
+    callbacks.onComplete();
+  } catch (error) {
+    callbacks.onError(error instanceof Error ? error : new Error(String(error)));
+  }
 }

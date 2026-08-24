@@ -7,15 +7,15 @@ from app.core.logging import configure_logging
 
 configure_logging()
 
-from app.core.logging import get_logger
+from app.core.logging import get_logger  # noqa: E402
 
 log = get_logger(__name__)
 
-from fastapi import FastAPI 
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
-from app.core.config import settings
-from app.db.session import engine
+from app.core.config import settings  # noqa: E402
+from app.db.session import engine  # noqa: E402
 
 
 @asynccontextmanager
@@ -71,7 +71,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.api import router
+from app.api import router  # noqa: E402
 
 app.include_router(router)
 

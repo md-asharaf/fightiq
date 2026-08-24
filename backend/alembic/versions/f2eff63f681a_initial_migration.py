@@ -1,13 +1,12 @@
 """Initial migration
 
 Revision ID: f2eff63f681a
-Revises: 
+Revises:
 Create Date: 2026-08-22 20:15:06.554100
 
 """
 from collections.abc import Sequence
 
-import pgvector
 import sqlalchemy as sa
 from pgvector import sqlalchemy
 from sqlalchemy.dialects import postgresql
@@ -23,6 +22,7 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     """Upgrade schema."""
+    op.execute('CREATE EXTENSION IF NOT EXISTS vector')
     op.create_table("documents",
     sa.Column("id", sa.UUID(), nullable=False),
     sa.Column("title", sa.String(length=500), nullable=False),
