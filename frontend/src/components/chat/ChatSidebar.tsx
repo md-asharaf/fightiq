@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, MessageSquare, LogIn } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ChatSidebarProps {
   sessions: ChatSessionPreview[];
@@ -28,8 +29,9 @@ export function ChatSidebar({ sessions, loading, activeSessionId, onSelect, onNe
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
-        {!session ? (
+      <ScrollArea className="flex-1 p-3">
+        <div className="space-y-2">
+          {!session ? (
           <div className="flex flex-col items-center justify-center h-40 text-center p-4">
             <MessageSquare className="h-8 w-8 text-muted-foreground mb-3" />
             <p className="text-sm font-semibold text-muted-foreground mb-4">Sign in to save and view your chat history</p>
@@ -67,7 +69,8 @@ export function ChatSidebar({ sessions, loading, activeSessionId, onSelect, onNe
             </button>
           ))
         )}
-      </div>
+        </div>
+      </ScrollArea>
     </div>
   );
 }
