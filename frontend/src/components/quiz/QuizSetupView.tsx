@@ -14,11 +14,36 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { QuizSession } from "@/types";
+import { Skull, Shield, Target, GraduationCap } from "lucide-react";
+
+const difficultyMeta = {
+  beginner: {
+    color: "border-green-500 text-green-500",
+    icon: <GraduationCap className="h-5 w-5" />,
+    desc: "Direct and factual questions. Options are easy to distinguish. Perfect for casual fans."
+  },
+  intermediate: {
+    color: "border-blue-500 text-blue-500",
+    icon: <Shield className="h-5 w-5" />,
+    desc: "Analytical and situational questions. Requires good understanding of the sport."
+  },
+  expert: {
+    color: "border-orange-500 text-orange-500",
+    icon: <Target className="h-5 w-5" />,
+    desc: "Highly specific trivia and technical stats. Watch out for tricky 'trap' options!"
+  },
+  hardcore: {
+    color: "border-red-600 text-red-600 bg-red-950/20",
+    icon: <Skull className="h-5 w-5" />,
+    desc: "Punishingly difficult. Obscure history and deep analytics. Wrong answers look totally correct."
+  }
+};
 
 export function QuizSetupView() {
   const router = useRouter();
   const { sessions, loadingSessions, generateQuiz } = useQuizList();
   const [loading, setLoading] = useState(false);
+  const [selectedDifficulty, setSelectedDifficulty] = useState("intermediate");
 
   const handleGenerate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -72,7 +97,7 @@ export function QuizSetupView() {
                 </div>
                 <div className="space-y-3">
                   <Label htmlFor="difficulty" className="text-xs font-bold text-muted-foreground">Difficulty</Label>
-                  <Select name="difficulty" defaultValue="intermediate">
+                  <Select name="difficulty" value={selectedDifficulty} onValueChange={(val) => val && setSelectedDifficulty(val)}>
                     <SelectTrigger id="difficulty" className="bg-background border-border text-foreground h-12 rounded-none focus:ring-primary">
                       <SelectValue placeholder="Select difficulty" />
                     </SelectTrigger>
@@ -80,8 +105,19 @@ export function QuizSetupView() {
                       <SelectItem value="beginner" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer">Beginner</SelectItem>
                       <SelectItem value="intermediate" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer">Intermediate</SelectItem>
                       <SelectItem value="expert" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer">Expert</SelectItem>
+                      <SelectItem value="hardcore" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer text-destructive font-bold">Hardcore</SelectItem>
                     </SelectContent>
                   </Select>
+                  
+                  <div className={`mt-4 p-4 text-sm border-l-4 rounded-r-md bg-muted/20 ${difficultyMeta[selectedDifficulty as keyof typeof difficultyMeta].color}`}>
+                    <h4 className="font-bold mb-1 flex items-center gap-2">
+                      {difficultyMeta[selectedDifficulty as keyof typeof difficultyMeta].icon}
+                      {selectedDifficulty.charAt(0).toUpperCase() + selectedDifficulty.slice(1)} Mode
+                    </h4>
+                    <p className="text-muted-foreground">
+                      {difficultyMeta[selectedDifficulty as keyof typeof difficultyMeta].desc}
+                    </p>
+                  </div>
                 </div>
               </form>
             </CardContent>

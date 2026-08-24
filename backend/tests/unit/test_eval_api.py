@@ -1,11 +1,13 @@
 import uuid
 from collections.abc import AsyncGenerator
+from datetime import datetime
 from unittest.mock import AsyncMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.core.dependencies import get_db, get_embedder, get_eval_service
+from app.core.dependencies import get_db, get_embedder, get_eval_service, require_admin
+from app.db.auth_models import User
 from app.main import app
 
 
@@ -26,9 +28,6 @@ def override_get_embedder():
 app.dependency_overrides[get_db] = override_get_db
 app.dependency_overrides[get_embedder] = override_get_embedder
 
-from app.core.dependencies import require_admin
-from app.db.auth_models import User
-from datetime import datetime
 def override_require_admin():
     return User(
         id="test_admin_id",

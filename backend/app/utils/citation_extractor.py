@@ -46,7 +46,7 @@ def extract_citations_from_string(text: str) -> list[dict[str, Any]]:
                 title = line[7:].strip()
             elif line.startswith("Source: "):
                 source = line[8:].strip()
-        
+
         if source and source not in seen:
             seen.add(source)
             citations.append({

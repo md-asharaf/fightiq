@@ -61,7 +61,7 @@ def chat_service():
     db = AsyncMock()  # Fake UnitOfWork manager
     embedder = AsyncMock(spec=Embedder)
     llm = FakeChatModel()
-    
+
     from app.services.agent_factory import AgentFactory
     agent_factory = AgentFactory(db=db, embedder=embedder, llm=llm, search_tools=[])
 
