@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { MessageProps } from "@/components/chat/ChatMessage";
 import { streamChat, fetchApi } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,7 +21,7 @@ export function useChat() {
     queryFn: async () => {
       try {
         return await fetchApi("/chat/sessions");
-      } catch (err) {
+      } catch {
         return [];
       }
     },
@@ -61,12 +61,14 @@ export function useChat() {
     setIsLoading(false);
   };
 
-  const handleSend = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const handleSend = async (e?: React.FormEvent | string) => {
+    if (e && typeof e !== "string" && "preventDefault" in e) e.preventDefault();
+    
+    const textToSend = typeof e === "string" ? e : input;
+    if (!textToSend.trim() || isLoading) return;
 
-    const userMessage = input.trim();
-    setInput("");
+    const userMessage = textToSend.trim();
+    if (typeof e !== "string") setInput("");
 
     setMessages(prev => [...prev, { role: "user", content: userMessage }]);
     setIsLoading(true);

@@ -1,10 +1,6 @@
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.schemas.quiz import QuizGeneratedData
-from app.utils.embedder import Embedder
-from app.utils.retriever import UFCRetriever
 
 QUIZ_SYSTEM_PROMPT = """You are FightIQ, an expert MMA quiz generator.
 Your task is to generate a {difficulty} difficulty multiple-choice quiz about "{topic}".
@@ -31,31 +27,13 @@ QUIZ_PROMPT = ChatPromptTemplate.from_messages(
 
 
 async def generate_quiz(
-    session: AsyncSession,
-    embedder: Embedder,
     llm: BaseChatModel,
     topic: str,
     difficulty: str,
     num_questions: int,
-    category: str | None = None,
-    fighter: str | None = None,
+    context_str: str,
 ) -> QuizGeneratedData:
-    """Retrieve relevant documents for the topic, then generate a structured quiz.
-    """
-    retriever = UFCRetriever(
-        session=session,
-        embedder=embedder,
-        category=category,
-        fighter=fighter,
-        k=10,
-    )
-    docs = await retriever.ainvoke(topic)
-
-    context_str = "\n\n".join(
-        f"Document Title: {doc.metadata.get('title', 'Unknown')}\n{doc.page_content}"
-        for doc in docs
-    )
-
+    """Generate a structured quiz based on the provided context."""
     structured_llm = llm.with_structured_output(QuizGeneratedData)
     chain = QUIZ_PROMPT | structured_llm
 

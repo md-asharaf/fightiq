@@ -1,23 +1,11 @@
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.exceptions import ResourceNotFoundError
 from app.db.models import QuizResult, QuizSession
 from app.schemas.quiz import QuestionResult, QuizSubmitRequest, QuizSubmitResponse
 
-
-async def evaluate_quiz(
-    session: AsyncSession,
+def evaluate_quiz(
+    quiz_session: QuizSession,
     submit_request: QuizSubmitRequest,
-) -> QuizSubmitResponse:
+) -> tuple[QuizResult, QuizSubmitResponse]:
     """Evaluate a user's quiz submission against the stored quiz session."""
-    stmt = select(QuizSession).where(QuizSession.id == submit_request.session_id)
-    result = await session.execute(stmt)
-    quiz_session = result.scalar_one_or_none()
-
-    if not quiz_session:
-        raise ResourceNotFoundError(f"Quiz session {submit_request.session_id} not found.")
-
     questions = quiz_session.questions
     score = 0
     question_results = []
@@ -53,12 +41,13 @@ async def evaluate_quiz(
         total_questions=total,
         score_percentage=percentage,
     )
-    session.add(quiz_result_db)
 
-    return QuizSubmitResponse(
+    response = QuizSubmitResponse(
         session_id=quiz_session.id,
         score=score,
         total_questions=total,
         score_percentage=percentage,
         results=question_results,
     )
+
+    return quiz_result_db, response

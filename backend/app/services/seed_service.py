@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.repositories.document_repository import DocumentRepository
+from app.repositories.chunk_repository import ChunkRepository
 
 from app.core.logging import get_logger
 from app.db.models import Document
@@ -22,16 +22,9 @@ CATEGORY_MAP: dict[str, str] = {
 }
 
 
-async def _document_exists(session: AsyncSession, source: str) -> bool:
-    """Return True if a document with this source path is already in the DB."""
-    result = await session.execute(
-        select(Document.id).where(Document.source == source).limit(1),
-    )
-    return result.scalar_one_or_none() is not None
-
-
 async def seed_knowledge_base(
-    session: AsyncSession,
+    doc_repo: DocumentRepository,
+    chunk_repo: ChunkRepository,
     embedder: Embedder,
     force: bool = False,
 ) -> dict[str, int]:
@@ -62,7 +55,7 @@ async def seed_knowledge_base(
         for file_path in files:
             source = str(file_path.resolve())
 
-            if not force and await _document_exists(session, source):
+            if not force and await doc_repo.document_exists(source):
                 log.debug("Skipping already-ingested seed file", file=file_path.name)
                 continue
 
@@ -72,7 +65,8 @@ async def seed_knowledge_base(
                     category=category,
                     source_type="seed",
                     metadata={"category": category},
-                    session=session,
+                    doc_repo=doc_repo,
+                    chunk_repo=chunk_repo,
                     embedder=embedder,
                 )
                 counts[category] += 1
@@ -82,7 +76,7 @@ async def seed_knowledge_base(
                     category=category,
                 )
             except Exception:
-                await session.rollback()
+                await doc_repo.rollback()
                 log.exception(
                     "Failed to ingest seed file — skipping",
                     file=str(file_path),

@@ -78,7 +78,7 @@ def require_auth(user: User | None = Depends(get_current_user)) -> User:
     return user
 
 
-def get_llm() -> BaseChatModel:
+def get_chat_llm() -> BaseChatModel:
     return ChatGoogleGenerativeAI(
         model=settings.llm_model,
         google_api_key=SecretStr(settings.google_api_key),
@@ -87,23 +87,72 @@ def get_llm() -> BaseChatModel:
     )
 
 
-def get_search_provider() -> IWebSearchProvider:
+def get_fast_llm() -> BaseChatModel:
+    from langchain_groq import ChatGroq
+    return ChatGroq(
+        model=settings.groq_model,
+        api_key=SecretStr(settings.groq_api_key) if settings.groq_api_key else None,
+        max_tokens=1024,
+    )
+
+
+def get_search_provider(
+    session: AsyncSession = Depends(get_db),
+    embedder: Embedder = Depends(get_embedder),
+    llm: BaseChatModel = Depends(get_fast_llm),
+) -> IWebSearchProvider:
     from app.utils.tools import ExaSearchProvider
-    return ExaSearchProvider(settings.exa_api_key)
+    from app.repositories.tool_cache_repository import ToolCacheRepository
+    from app.repositories.knowledge_graph_repository import KnowledgeGraphRepository
+    
+    cache_repo = ToolCacheRepository(session=session)
+    kg_repo = KnowledgeGraphRepository(session=session)
+    
+    return ExaSearchProvider(
+        settings.exa_api_key, 
+        cache_repo=cache_repo, 
+        kg_repo=kg_repo, 
+        embedder=embedder, 
+        llm=llm
+    )
 
 
-def get_search_tools(provider: IWebSearchProvider = Depends(get_search_provider)) -> list[BaseTool]:
-    normal_tool = StructuredTool.from_function(
-        func=lambda query: provider.search(query, "keyword", 3),
+def get_search_tools(
+    provider: IWebSearchProvider = Depends(get_search_provider),
+    db: AsyncSession = Depends(get_db)
+) -> list[BaseTool]:
+    normal_tool_cached = StructuredTool.from_function(
+        coroutine=lambda query: provider.search(query, "keyword", 3, use_cache=True),
         name="normal_web_search",
-        description="Search the web for quick, real-time facts (e.g. recent fights, stats, news). Use this when the knowledge base lacks information on recent events or general web knowledge.",
+        description="Search the web for quick, real-time facts (e.g. recent fights, stats, news). Uses a 24-hour cache for speed. Use this when the knowledge base lacks information.",
+    )
+    normal_tool_realtime = StructuredTool.from_function(
+        coroutine=lambda query: provider.search(query, "keyword", 3, use_cache=False),
+        name="realtime_web_search",
+        description="Bypasses the cache to search the web for to-the-minute breaking news or live updates. ONLY use this if the user specifically requests breaking news or live updates.",
     )
     deep_tool = StructuredTool.from_function(
-        func=lambda query: provider.search(query, "neural", 5),
+        coroutine=lambda query: provider.search(query, "neural", 5, use_cache=True),
         name="deep_web_search",
-        description="Search the web deeply for complex questions requiring extensive context, historical analysis, or synthesis across multiple sources. Use this only when normal_web_search is insufficient.",
+        description="Search the web deeply for complex questions requiring extensive context or synthesis. Uses a 24-hour cache.",
     )
-    return [normal_tool, deep_tool]
+    
+    from app.services.database_tool_service import DatabaseToolService
+    db_tool_service = DatabaseToolService(db)
+            
+    sql_tool = StructuredTool.from_function(
+        coroutine=db_tool_service.execute_query,
+        name="query_database",
+        description=(
+            "Execute a raw SQL SELECT query against the structured knowledge graph to get exact stats or math.\n"
+            "The database contains these tables:\n"
+            "- fighters (id, name, nickname, weight_class, wins, losses, draws, is_champion, title_defenses, championships, win_streak, team, stance, height_cm, reach_cm, slpm, str_acc, sapm, str_def, td_avg, td_acc, td_def, sub_avg, last_updated)\n"
+            "- events (id, name, date, location, last_updated)\n"
+            "Use standard PostgreSQL syntax. NEVER run updates or deletes."
+        )
+    )
+
+    return [sql_tool, normal_tool_cached, normal_tool_realtime, deep_tool]
 
 
 def get_retriever(
@@ -119,16 +168,22 @@ def get_chat_repository(session: AsyncSession = Depends(get_db)) -> IChatReposit
     return ChatRepository(session=session)
 
 
-def get_chat_service(
-    repo: IChatRepository = Depends(get_chat_repository),
+def get_agent_factory(
     db: AsyncSession = Depends(get_db),
     embedder: Embedder = Depends(get_embedder),
-    llm: BaseChatModel = Depends(get_llm),
+    llm: BaseChatModel = Depends(get_chat_llm),
     search_tools: list[BaseTool] = Depends(get_search_tools),
+):
+    from app.services.agent_factory import AgentFactory
+    return AgentFactory(db=db, embedder=embedder, llm=llm, search_tools=search_tools)
+
+def get_chat_service(
+    repo: IChatRepository = Depends(get_chat_repository),
+    agent_factory = Depends(get_agent_factory),
 ):
     from app.services.chat_service import ChatService
     return ChatService(
-        chat_repository=repo, db=db, embedder=embedder, llm=llm, search_tools=search_tools
+        chat_repository=repo, agent_factory=agent_factory
     )
 
 
@@ -141,26 +196,29 @@ def get_eval_service(
     repo: IEvalRepository = Depends(get_eval_repository),
     db: AsyncSession = Depends(get_db),
     embedder: Embedder = Depends(get_embedder),
-    llm: BaseChatModel = Depends(get_llm),
-    chat_service=Depends(get_chat_service),
+    llm: BaseChatModel = Depends(get_fast_llm),
+    agent_factory=Depends(get_agent_factory),
 ):
     from app.services.eval_service import EvalService
-    return EvalService(eval_repository=repo, db=db, embedder=embedder, llm=llm, chat_service=chat_service)
+    return EvalService(eval_repository=repo, db=db, embedder=embedder, llm=llm, agent_factory=agent_factory)
 
 
 def get_quiz_repository(session: AsyncSession = Depends(get_db)) -> IQuizRepository:
     from app.repositories.quiz_repository import QuizRepository
     return QuizRepository(session=session)
-
+    
+def get_chunk_repository(session: AsyncSession = Depends(get_db)):
+    from app.repositories.chunk_repository import ChunkRepository
+    return ChunkRepository(session=session)
 
 def get_quiz_service(
     repo: IQuizRepository = Depends(get_quiz_repository),
-    db: AsyncSession = Depends(get_db),
+    chunk_repo = Depends(get_chunk_repository),
     embedder: Embedder = Depends(get_embedder),
-    llm: BaseChatModel = Depends(get_llm),
+    llm: BaseChatModel = Depends(get_fast_llm),
 ):
     from app.services.quiz_service import QuizService
-    return QuizService(quiz_repository=repo, db=db, embedder=embedder, llm=llm)
+    return QuizService(quiz_repository=repo, chunk_repository=chunk_repo, embedder=embedder, llm=llm)
 
 
 def get_document_repository(session: AsyncSession = Depends(get_db)) -> IDocumentRepository:

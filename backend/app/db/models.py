@@ -12,6 +12,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    JSON,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -196,5 +197,66 @@ class EvalRun(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False,
     )
+
+
+class SemanticToolCache(Base):
+    """Caches tool responses (e.g. web searches) based on semantic similarity."""
+
+    __tablename__ = "semantic_tool_cache"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+    )
+    query: Mapped[str] = mapped_column(Text, nullable=False)
+    query_embedding: Mapped[list[float]] = mapped_column(
+        Vector(768), nullable=False,
+    )
+    tool_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    result_payload: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+
+
+class Fighter(Base):
+    """Structured data about a UFC Fighter extracted from web searches."""
+    __tablename__ = "fighters"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    nickname: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    weight_class: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    wins: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    losses: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    draws: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    is_champion: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    title_defenses: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    championships: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    win_streak: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    team: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    stance: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    height_cm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    reach_cm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    slpm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    str_acc: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sapm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    str_def: Mapped[float | None] = mapped_column(Float, nullable=True)
+    td_avg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    td_acc: Mapped[float | None] = mapped_column(Float, nullable=True)
+    td_def: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sub_avg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class Event(Base):
+    """Structured data about a UFC Event extracted from web searches."""
+    __tablename__ = "events"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
 
 from app.db.auth_models import Account, Session, User, Verification  # noqa: E402, F401

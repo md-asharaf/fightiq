@@ -5,15 +5,12 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.dependencies import get_db, get_embedder
+from app.core.dependencies import get_embedder, get_document_repository, get_chunk_repository
 from app.core.logging import get_logger
 from app.schemas.document import IngestResponse, IngestScrapeRequest, IngestSeedRequest
 from app.services.ingestion_service import ingest_bytes, ingest_text
-from app.services.seed_service import seed_knowledge_base
 from app.utils.embedder import Embedder
-from app.utils.scraper import scrape_topics_generator
+
 
 log = get_logger(__name__)
 router = APIRouter()
@@ -35,13 +32,16 @@ _VALID_CATEGORIES = {"fighters", "events", "history", "rules", "general"}
 )
 async def ingest_seed(
     request: IngestSeedRequest,
-    db: AsyncSession = Depends(get_db),
+    doc_repo = Depends(get_document_repository),
+    chunk_repo = Depends(get_chunk_repository),
     embedder: Embedder = Depends(get_embedder),
 ) -> IngestResponse:
+    from app.services.seed_service import seed_knowledge_base
     log.info("Seed ingestion endpoint triggered", force=request.force)
-
+    
     counts = await seed_knowledge_base(
-        session=db,
+        doc_repo=doc_repo,
+        chunk_repo=chunk_repo,
         embedder=embedder,
         force=request.force,
     )
@@ -71,7 +71,8 @@ async def ingest_file(
         default="general",
         description="Knowledge category: fighters | events | history | rules | general",
     ),
-    db: AsyncSession = Depends(get_db),
+    doc_repo = Depends(get_document_repository),
+    chunk_repo = Depends(get_chunk_repository),
     embedder: Embedder = Depends(get_embedder),
 ) -> IngestResponse:
     if not file.filename:
@@ -114,13 +115,15 @@ async def ingest_file(
         category=category,
     )
 
+
     doc = await ingest_bytes(
         content=content,
         filename=file.filename,
         category=category,
         source_type="upload",
         metadata={"original_filename": file.filename, "category": category},
-        session=db,
+        doc_repo=doc_repo,
+        chunk_repo=chunk_repo,
         embedder=embedder,
     )
 
@@ -141,46 +144,19 @@ async def ingest_file(
 )
 async def ingest_scrape(
     request: IngestScrapeRequest,
-    db: AsyncSession = Depends(get_db),
+    doc_repo = Depends(get_document_repository),
+    chunk_repo = Depends(get_chunk_repository),
     embedder: Embedder = Depends(get_embedder),
 ):
+    from app.services.ingestion_service import scrape_and_ingest_stream
     log.info("Scrape requested", topics=request.topics, category=request.category)
+    
+    event_generator = scrape_and_ingest_stream(
+        topics=request.topics,
+        category=request.category,
+        doc_repo=doc_repo,
+        chunk_repo=chunk_repo,
+        embedder=embedder,
+    )
 
-    async def event_generator():
-        total_chunks = 0
-        success_count = 0
-
-        for step in scrape_topics_generator(request.topics):
-            if step["status"] == "scraping":
-                yield f"data: {json.dumps(step)}\n\n"
-            elif step["status"] == "success":
-                item = step["data"]
-                topic = step["topic"]
-                yield f"data: {json.dumps({'status': 'embedding', 'topic': topic})}\n\n"
-
-                try:
-                    doc = await ingest_text(
-                        text=item["content"],
-                        title=item["title"],
-                        source=item["url"],
-                        category=request.category,
-                        source_type="scraped",
-                        metadata={
-                            "url": item["url"],
-                            "category": request.category,
-                            "scraped_from": "web",
-                        },
-                        session=db,
-                        embedder=embedder,
-                    )
-                    total_chunks += doc.chunk_count
-                    success_count += 1
-                    yield f"data: {json.dumps({'status': 'embedded', 'topic': topic, 'chunks': doc.chunk_count})}\n\n"
-                except Exception as e:
-                    yield f"data: {json.dumps({'status': 'error', 'topic': topic, 'message': str(e)})}\n\n"
-            elif step["status"] == "error":
-                yield f"data: {json.dumps(step)}\n\n"
-
-        yield f"data: {json.dumps({'status': 'complete', 'documents_created': success_count, 'chunks_created': total_chunks})}\n\n"
-
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return StreamingResponse(event_generator, media_type="text/event-stream")

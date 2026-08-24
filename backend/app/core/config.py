@@ -25,9 +25,23 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     database_url: str
+
+    @property
+    def get_db_config(self) -> tuple[str, dict]:
+        url = self.database_url
+        connect_args = {}
+        if "&options=" in url:
+            base_url, options_part = url.split("&options=", 1)
+            options_val = options_part.replace("%%3D", "=").replace("%3D", "=")
+            connect_args = {"server_settings": {"options": options_val}}
+            url = base_url
+        return url, connect_args
+
     google_api_key: str
     llm_model: str = "gemini-1.5-flash"
     exa_api_key: str = ""
+    groq_api_key: str = ""
+    groq_model: str = "openai/gpt-oss-20b"
     embedding_model: str = "models/gemini-embedding-2"
     embedding_dimensions: int = 768
 

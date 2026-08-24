@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.utils.embedder import Embedder
-from app.utils.vectorstore import similarity_search
+from app.repositories.chunk_repository import ChunkRepository
 
 log = get_logger(__name__)
 
@@ -49,9 +49,9 @@ class UFCRetriever(BaseRetriever):
         log.debug("Retriever querying", query_preview=query[:100], k=self.k)
 
         query_embedding = await self.embedder.aembed_query(query)
+        chunk_repo = ChunkRepository(session=self.session)
 
-        chunks_with_distances = await similarity_search(
-            session=self.session,
+        chunks_with_distances = await chunk_repo.similarity_search(
             query_embedding=query_embedding,
             k=self.k,
             category=self.category,

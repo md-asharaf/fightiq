@@ -37,3 +37,7 @@ class QuizRepository(BaseRepository[QuizSession]):
         stmt = select(QuizResult).where(QuizResult.session_id == session_id).order_by(desc(QuizResult.created_at))
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def save_result(self, quiz_result: QuizResult) -> QuizResult:
+        self.session.add(quiz_result)
+        return quiz_result

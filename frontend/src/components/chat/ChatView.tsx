@@ -30,6 +30,12 @@ export function ChatView() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
+  useEffect(() => {
+    if (input === "" && textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+  }, [input]);
+
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
     if (textareaRef.current) {
@@ -86,12 +92,31 @@ export function ChatView() {
       <div className="flex-1 overflow-y-auto pb-40 px-4 md:px-0">
         <div className="flex flex-col w-full max-w-3xl mx-auto pt-8">
           {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center text-center mt-20 space-y-4 opacity-50">
-              <div className="w-16 h-16 rounded-2xl bg-accent border border-border flex items-center justify-center mb-2">
-                <Swords className="w-8 h-8 text-primary" />
+            <div className="flex flex-col items-center justify-center mt-20 space-y-8">
+              <div className="flex flex-col items-center text-center space-y-4 opacity-80">
+                <div className="w-16 h-16 rounded-2xl bg-accent border border-border flex items-center justify-center mb-2 shadow-sm">
+                  <Swords className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-xl font-bold text-foreground tracking-tight">How can I help you?</h2>
+                <p className="text-sm text-muted-foreground">Ask me about UFC history, fighter stats, or unified rules.</p>
               </div>
-              <h2 className="text-xl font-bold text-foreground tracking-tight">How can I help you?</h2>
-              <p className="text-sm text-muted-foreground">Ask me about UFC history, fighter stats, or unified rules.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl mt-4">
+                {[
+                  "Analyze Jon Jones's striking metrics",
+                  "Explain the judging criteria for a 10-8 round",
+                  "Who holds the record for most title defenses?",
+                  "Compare the stats of Khabib and Conor"
+                ].map((suggestion, i) => (
+                  <Button
+                    key={i}
+                    variant="outline"
+                    onClick={() => handleSend(suggestion)}
+                    className="h-auto py-3 px-4 text-left justify-start font-medium text-xs text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors whitespace-normal"
+                  >
+                    {suggestion}
+                  </Button>
+                ))}
+              </div>
             </div>
           )}
           {messages.map((msg, idx) => (

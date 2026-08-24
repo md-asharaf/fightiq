@@ -34,7 +34,7 @@ export default function Home() {
 
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mt-12">
               <Link href="/chat">
-                <Button size="lg" className="w-full sm:w-auto h-16 px-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest rounded-none text-xl transition-all shadow-[0_0_30px_rgba(220,38,38,0.4)] hover:shadow-[0_0_50px_rgba(220,38,38,0.6)] hover:-translate-y-1">
+                <Button size="lg" className="w-full sm:w-auto h-16 px-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest rounded-none text-xl transition-all hover:-translate-y-1">
                   Start Chat
                 </Button>
               </Link>
@@ -89,7 +89,7 @@ export default function Home() {
                 desc: "Powered by a high-performance stack: Next.js frontend with Shadcn UI, FastAPI backend, SQLAlchemy ORM, and LangChain for advanced LLM orchestration."
               }
             ].map((feature, i) => (
-              <div key={i} className="group flex flex-col space-y-4 border border-border/50 p-8 hover:border-primary/50 transition-all bg-card hover:shadow-lg hover:-translate-y-1 duration-300">
+              <div key={i} className="group flex flex-col space-y-4 border border-border/50 p-8 hover:border-primary/50 transition-all bg-card hover:-translate-y-1 duration-300">
                 <div className="h-14 w-14 bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors rounded-sm">
                   {feature.icon}
                 </div>
@@ -125,7 +125,7 @@ export default function Home() {
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-3" className="border border-border bg-card px-6 rounded-lg data-[state=open]:border-primary/50 transition-colors">
-              <AccordionTrigger className="text-xl font-bold hover:no-underline py-6 text-left">What happens if I click "Stop Generation" during a chat?</AccordionTrigger>
+              <AccordionTrigger className="text-xl font-bold hover:no-underline py-6 text-left">What happens if I click &quot;Stop Generation&quot; during a chat?</AccordionTrigger>
               <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-6">
                 Clicking stop triggers an AbortController in the Next.js frontend, severing the connection. The FastAPI backend catches the resulting Asyncio CancelledError, immediately halts the LLM stream, and gracefully saves the partial response to the database so your chat history remains intact without corruption.
               </AccordionContent>
@@ -133,7 +133,7 @@ export default function Home() {
             <AccordionItem value="item-4" className="border border-border bg-card px-6 rounded-lg data-[state=open]:border-primary/50 transition-colors">
               <AccordionTrigger className="text-xl font-bold hover:no-underline py-6 text-left">Who can access the Evaluation and Admin dashboards?</AccordionTrigger>
               <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-6">
-                Access is strictly controlled via the BetterAuth Admin plugin. Only users whose accounts have been explicitly granted the "admin" role in the database can bypass the Next.js middleware protecting the `/admin` and `/eval` routes.
+                Access is strictly controlled via the BetterAuth Admin plugin. Only users whose accounts have been explicitly granted the &quot;admin&quot; role in the database can bypass the Next.js middleware protecting the `/admin` and `/eval` routes.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -147,12 +147,26 @@ export default function Home() {
           <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-foreground mb-6">Ready to test your <span className="text-primary">FightIQ?</span></h2>
           <p className="text-xl text-muted-foreground font-medium mb-10 max-w-2xl mx-auto">Join the platform and see if you have what it takes to outsmart the AI.</p>
           <Link href="/login">
-            <Button size="lg" className="h-16 px-16 bg-foreground hover:bg-muted-foreground text-background font-black uppercase tracking-widest rounded-none text-xl transition-all hover:-translate-y-1 shadow-xl">
+            <Button size="lg" className="h-16 px-16 bg-foreground hover:bg-muted-foreground text-background font-black uppercase tracking-widest rounded-none text-xl transition-all hover:-translate-y-1 shadow-sm">
               Create an Account
             </Button>
           </Link>
         </div>
       </section>
+
+      {/* Landing Footer */}
+      <footer className="w-full py-12 border-t border-border bg-background">
+        <div className="container px-4 md:px-6 mx-auto flex flex-col md:flex-row items-center justify-between">
+          <div className="flex items-center space-x-2 mb-4 md:mb-0">
+            <span className="font-black text-xl tracking-tighter text-foreground uppercase">
+              Fight<span className="text-primary">IQ</span>
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
+            Built with Next.js, FastAPI, and Google Gemini
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

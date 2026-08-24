@@ -22,7 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ResourceNotFoundError
 from app.core.interfaces import IEvalRepository
 from app.schemas.eval import EvalMetricResult, EvalQuestionResult, EvalRunResult
-from app.services.chat_service import ChatService
+from app.services.agent_factory import AgentFactory
 from app.utils.embedder import Embedder
 from app.utils.retriever import UFCRetriever
 
@@ -34,13 +34,13 @@ class EvalService:
         db: AsyncSession,
         embedder: Embedder,
         llm: BaseChatModel,
-        chat_service: ChatService
+        agent_factory: AgentFactory
     ):
         self.repo = eval_repository
         self.db = db
         self.embedder = embedder
         self.llm = llm
-        self.chat_service = chat_service
+        self.agent_factory = agent_factory
 
     async def _run_evaluation(self) -> EvalRunResult:
         """Run Ragas evaluation on the golden_dataset.json."""
@@ -57,22 +57,21 @@ class EvalService:
         contexts_list = []
 
         retriever = UFCRetriever(session=self.db, embedder=self.embedder, k=4)
-
-        # We need a dummy session_id for chat_service processing since it expects one
-        dummy_session = str(uuid.uuid4())
+        agent_executor = self.agent_factory.create_agent(filters=None)
 
         for item in eval_data:
             question = item["question"]
             questions.append(question)
             ground_truths.append(item["ground_truth"])
 
-            # Use chat_service to process the message and get response
-            chat_msg = await self.chat_service.process_message(
-                session_id_str=dummy_session,
-                message=question,
-                stream=False
+            # Use agent directly to get response
+            result_ai = await agent_executor.ainvoke(
+                {
+                    "input": question,
+                    "chat_history": [],
+                }
             )
-            answers.append(chat_msg.content)
+            answers.append(result_ai["output"])
 
             docs = await retriever.ainvoke(question)
             contexts = [doc.page_content for doc in docs]

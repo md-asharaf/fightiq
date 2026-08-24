@@ -50,15 +50,20 @@ export function LoginView() {
   };
 
   const handleGoogleSignIn = async () => {
-    await signIn.social({
+    setLoading(true);
+    const { error } = await signIn.social({
       provider: "google",
       callbackURL: "/chat",
     });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message || "Google Sign-In failed or not configured.");
+    }
   };
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md bg-card border-border shadow-2xl rounded-none">
+      <Card className="w-full max-w-md bg-card border-border shadow-sm rounded-none">
         <CardHeader className="space-y-1 border-b border-border bg-muted/30">
           <CardTitle className="text-2xl font-black uppercase tracking-tighter text-foreground">
             {isLogin ? "Sign In" : "Create Account"}

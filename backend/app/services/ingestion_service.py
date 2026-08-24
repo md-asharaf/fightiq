@@ -3,7 +3,8 @@ from __future__ import annotations
 import uuid
 from pathlib import Path
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.repositories.document_repository import DocumentRepository
+from app.repositories.chunk_repository import ChunkRepository
 
 from app.core.logging import get_logger
 from app.db.models import Chunk, Document
@@ -24,7 +25,8 @@ async def ingest_text(
     category: str,
     source_type: str,
     metadata: dict,
-    session: AsyncSession,
+    doc_repo: DocumentRepository,
+    chunk_repo: ChunkRepository,
     embedder: Embedder,
 ) -> Document:
     """Core ingestion function — the entry point for all content into the RAG system."""
@@ -37,8 +39,7 @@ async def ingest_text(
         metadata_=metadata,
         chunk_count=0,
     )
-    session.add(doc)
-    await session.flush()
+    doc = await doc_repo.create_document(doc)
 
     log.info("Ingestion started", title=title, category=category, source_type=source_type)
 
@@ -53,7 +54,7 @@ async def ingest_text(
 
     if not lc_chunks:
         log.warning("Document produced no chunks — skipping", title=title)
-        await session.commit()
+        await doc_repo.commit()
         return doc
 
     log.info("Document chunked", title=title, num_chunks=len(lc_chunks))
@@ -84,11 +85,9 @@ async def ingest_text(
                 ),
             )
 
-    session.add_all(chunk_records)
-
+    await chunk_repo.add_chunks(chunk_records)
     doc.chunk_count = len(chunk_records)
-
-    await session.commit()
+    await doc_repo.commit()
 
     log.info(
         "Document ingested",
@@ -106,7 +105,8 @@ async def ingest_bytes(
     category: str,
     source_type: str,
     metadata: dict,
-    session: AsyncSession,
+    doc_repo: DocumentRepository,
+    chunk_repo: ChunkRepository,
     embedder: Embedder,
 ) -> Document:
     """Ingest a document from raw bytes (used for file uploads)."""
@@ -118,7 +118,8 @@ async def ingest_bytes(
         category=category,
         source_type=source_type,
         metadata=metadata,
-        session=session,
+        doc_repo=doc_repo,
+        chunk_repo=chunk_repo,
         embedder=embedder,
     )
 
@@ -129,7 +130,8 @@ async def ingest_path(
     category: str,
     source_type: str,
     metadata: dict,
-    session: AsyncSession,
+    doc_repo: DocumentRepository,
+    chunk_repo: ChunkRepository,
     embedder: Embedder,
 ) -> Document:
     """Ingest a document from a filesystem path (used for seed data)."""
@@ -142,6 +144,57 @@ async def ingest_path(
         category=category,
         source_type=source_type,
         metadata={**metadata, "filename": path.name},
-        session=session,
+        doc_repo=doc_repo,
+        chunk_repo=chunk_repo,
         embedder=embedder,
     )
+
+
+import json
+from collections.abc import AsyncGenerator
+from app.utils.scraper import scrape_topics_generator
+
+async def scrape_and_ingest_stream(
+    topics: list[str],
+    category: str,
+    doc_repo: DocumentRepository,
+    chunk_repo: ChunkRepository,
+    embedder: Embedder,
+) -> AsyncGenerator[str, None]:
+    """Streams Server-Sent Events (SSE) detailing the progress of scraping and embedding."""
+    total_chunks = 0
+    success_count = 0
+
+    for step in scrape_topics_generator(topics):
+        if step["status"] == "scraping":
+            yield f"data: {json.dumps(step)}\n\n"
+        elif step["status"] == "success":
+            item = step["data"]
+            topic = step["topic"]
+            yield f"data: {json.dumps({'status': 'embedding', 'topic': topic})}\n\n"
+
+            try:
+                doc = await ingest_text(
+                    text=item["content"],
+                    title=item["title"],
+                    source=item["url"],
+                    category=category,
+                    source_type="scraped",
+                    metadata={
+                        "url": item["url"],
+                        "category": category,
+                        "scraped_from": "web",
+                    },
+                    doc_repo=doc_repo,
+                    chunk_repo=chunk_repo,
+                    embedder=embedder,
+                )
+                total_chunks += doc.chunk_count
+                success_count += 1
+                yield f"data: {json.dumps({'status': 'embedded', 'topic': topic, 'chunks': doc.chunk_count})}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'status': 'error', 'topic': topic, 'message': str(e)})}\n\n"
+        elif step["status"] == "error":
+            yield f"data: {json.dumps(step)}\n\n"
+
+    yield f"data: {json.dumps({'status': 'complete', 'documents_created': success_count, 'chunks_created': total_chunks})}\n\n"
