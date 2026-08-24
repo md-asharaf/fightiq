@@ -23,18 +23,10 @@ async def chat_message(
     """Send a message to the RAG chat system.
     Supports both streaming (SSE) and non-streaming responses.
     """
-    session_id_str = request.session_id
-    if session_id_str:
-        try:
-            uuid.UUID(session_id_str)
-        except ValueError:
-            session_id_str = str(uuid.uuid4())
-    else:
-        session_id_str = str(uuid.uuid4())
     user_id = current_user.id if current_user else None
 
     response = await chat_service.process_message(
-        session_id_str=session_id_str,
+        session_id_str=request.session_id,
         message=request.message,
         stream=request.stream,
         user_id=user_id,
@@ -44,7 +36,7 @@ async def chat_message(
     if request.stream:
         return StreamingResponse(response, media_type="text/event-stream")
 
-    return ChatResponse(session_id=session_id_str, message=response)
+    return ChatResponse(session_id=request.session_id, message=response)
 
 
 @router.get("/sessions", response_model=list[ChatSessionPreview])

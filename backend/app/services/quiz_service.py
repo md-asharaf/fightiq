@@ -3,7 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ResourceNotFoundError
 from app.core.interfaces import IQuizRepository
-from app.schemas.quiz import QuizGenerateRequest, QuizSubmitRequest
+from app.schemas.quiz import (
+    QuestionResult,
+    QuizGenerateRequest,
+    QuizSubmitRequest,
+    QuizSubmitResponse,
+)
 from app.utils.embedder import Embedder
 from app.utils.quiz_evaluator import evaluate_quiz
 from app.utils.quiz_generator import generate_quiz
@@ -56,3 +61,36 @@ class QuizService:
         if not result:
             raise ResourceNotFoundError(f"Quiz result for session '{session_id}' not found")
         return result
+
+    async def get_detailed_result(self, session_id) -> QuizSubmitResponse:
+        session = await self.get_session(session_id)
+        result_db = await self.get_result(session_id)
+
+        questions = session.questions
+        question_results = []
+
+        for q_data in questions:
+            q_id = q_data["id"]
+            correct_id = q_data["correct_option_id"]
+            explanation = q_data["explanation"]
+
+            selected_id = result_db.answers.get(q_id)
+            is_correct = (selected_id == correct_id)
+
+            question_results.append(
+                QuestionResult(
+                    question_id=q_id,
+                    is_correct=is_correct,
+                    selected_option_id=selected_id,
+                    correct_option_id=correct_id,
+                    explanation=explanation,
+                )
+            )
+
+        return QuizSubmitResponse(
+            session_id=session.id,
+            score=result_db.score,
+            total_questions=result_db.total_questions,
+            score_percentage=result_db.score_percentage,
+            results=question_results,
+        )

@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, status
 
 from app.core.dependencies import get_quiz_service
 from app.schemas.quiz import (
-    QuestionResult,
     QuizGenerateRequest,
     QuizSessionRead,
     QuizSubmitRequest,
@@ -60,34 +59,4 @@ async def api_get_quiz_result(
     quiz_service: QuizServiceDep,
 ):
     """Get the result of a submitted quiz session."""
-    session = await quiz_service.get_session(session_id)
-    result_db = await quiz_service.get_result(session_id)
-
-    questions = session.questions
-    question_results = []
-
-    for q_data in questions:
-        q_id = q_data["id"]
-        correct_id = q_data["correct_option_id"]
-        explanation = q_data["explanation"]
-
-        selected_id = result_db.answers.get(q_id)
-        is_correct = (selected_id == correct_id)
-
-        question_results.append(
-            QuestionResult(
-                question_id=q_id,
-                is_correct=is_correct,
-                selected_option_id=selected_id,
-                correct_option_id=correct_id,
-                explanation=explanation,
-            )
-        )
-
-    return QuizSubmitResponse(
-        session_id=session.id,
-        score=result_db.score,
-        total_questions=result_db.total_questions,
-        score_percentage=result_db.score_percentage,
-        results=question_results,
-    )
+    return await quiz_service.get_detailed_result(session_id)

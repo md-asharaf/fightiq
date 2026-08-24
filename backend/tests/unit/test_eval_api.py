@@ -1,5 +1,5 @@
-from collections.abc import AsyncGenerator
 import uuid
+from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock
 
 import pytest

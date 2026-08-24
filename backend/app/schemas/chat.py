@@ -1,7 +1,8 @@
-from typing import Any
+import uuid
 from datetime import datetime
+from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ChatMessage(BaseModel):
@@ -15,8 +16,8 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     """Request to send a message to the chat API."""
 
-    session_id: str | None = Field(
-        default=None,
+    session_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
         description="Session ID to maintain conversation history. If omitted, a new session is created.",
     )
     message: str = Field(description="The user's message")
@@ -25,6 +26,17 @@ class ChatRequest(BaseModel):
         default=None,
         description="Optional metadata filters for retrieval (e.g., {'category': 'fighters'})",
     )
+
+    @field_validator("session_id", mode="before")
+    @classmethod
+    def validate_session_id(cls, v: str | None) -> str:
+        if v:
+            try:
+                uuid.UUID(v)
+                return v
+            except ValueError:
+                pass
+        return str(uuid.uuid4())
 
 
 class ChatResponse(BaseModel):
