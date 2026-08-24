@@ -36,9 +36,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
-      - /app/.venv  # Exclude venv from bind mount
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -62,10 +59,6 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules  # Exclude node_modules from bind mount
-      - /app/.next         # Exclude build cache from bind mount
 
 volumes:
   postgres_data:

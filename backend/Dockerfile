@@ -9,9 +9,9 @@ COPY --from=ghcr.io/astral-sh/uv:0.5 /uv /usr/local/bin/uv
 # Copy dependency files first (layer caching)
 COPY pyproject.toml .
 
-# Create venv and install deps
+# Create venv and install deps without dev dependencies
 RUN uv venv /app/.venv && \
-    uv pip install --python /app/.venv/bin/python -e ".[dev]"
+    uv pip install --python /app/.venv/bin/python -e "."
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────
 FROM python:3.12-slim AS runtime
@@ -35,5 +35,5 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 EXPOSE 8000
 
-# Run with uvicorn; hot-reload in development (volume-mounted source)
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Run migrations and start server without reload
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
