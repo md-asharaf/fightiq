@@ -1,0 +1,88 @@
+[project]
+name = "fightiq-backend"
+version = "0.1.0"
+description = "FightIQ UFC GenAI Knowledge & Quiz Platform — Backend API"
+requires-python = ">=3.12"
+dependencies = [
+    # ── Web framework ──────────────────────────────
+    "fastapi[standard]>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    # ── Database ───────────────────────────────────
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
+    "alembic>=1.14.0",
+    "pgvector>=0.3.6",
+    # ── AI / LangChain ─────────────────────────────
+    "langchain>=0.3.0",
+    "langchain-google-genai>=2.0.0",
+    "langchain-community>=0.3.0",
+    "langchain-text-splitters>=0.3.0",
+    "google-generativeai>=0.8.0",
+    # ── Settings / validation ──────────────────────
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "python-multipart>=0.0.20",
+    # ── Utilities ──────────────────────────────────────────────────────
+    "httpx>=0.28.0",
+    "python-dotenv>=1.0.0",
+    "tenacity>=9.0.0",
+    "structlog>=25.0.0",
+    "numpy>=2.2.0",
+    # ── Document parsing ───────────────────────────────────────────────
+    "pypdf>=4.0.0",
+    # ── Web scraping ───────────────────────────────────────────────────
+    "requests>=2.32.0",
+    "beautifulsoup4>=4.12.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+    "pytest-cov>=6.0.0",
+    "httpx>=0.28.0",
+    "ruff>=0.9.0",
+    "mypy>=1.14.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = false
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.4",
+]
+# ── Pyrefly (IDE type checker) ─────────────────────────────────────────────────
+# The project venv uses uv's isolated CPython 3.12 at a non-standard path.
+# Pyrefly's interpreter query returns system Python 3.14 site-packages instead
+# of the venv's packages. We bypass this by specifying the path directly.
+[tool.pyrefly]
+python_version = "3.12"
+search_path = [
+    ".venv/lib/python3.12/site-packages",
+]

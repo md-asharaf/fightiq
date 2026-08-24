@@ -1,0 +1,72 @@
+services:
+  # ── PostgreSQL + pgvector ────────────────────────────────────────────────
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: fightiq-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fightiq}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fightiq_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-fightiq}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fightiq} -d ${POSTGRES_DB:-fightiq}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── FastAPI Backend ──────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fightiq-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Override DATABASE_URL to use Docker service name
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-fightiq}:${POSTGRES_PASSWORD:-fightiq_secret}@db:5432/${POSTGRES_DB:-fightiq}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/.venv  # Exclude venv from bind mount
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── Next.js Frontend ─────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fightiq-frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Exclude node_modules from bind mount
+      - /app/.next         # Exclude build cache from bind mount
+
+volumes:
+  postgres_data:
+    driver: local

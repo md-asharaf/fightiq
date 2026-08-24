@@ -1,0 +1,176 @@
+"""
+Wikipedia scraper for UFC knowledge documents.
+
+Fetches article content via the Wikipedia REST API and scrapes
+full page text via HTML parsing. Includes politeness delays
+between requests and graceful error handling.
+"""
+
+from __future__ import annotations
+
+import time
+from urllib.parse import quote as url_quote
+
+import requests
+from bs4 import BeautifulSoup
+
+from app.core.logging import get_logger
+
+log = get_logger(__name__)
+
+_SUMMARY_API = "https://en.wikipedia.org/api/rest_v1/page/summary/{}"
+_WIKI_BASE = "https://en.wikipedia.org/wiki/{}"
+_HEADERS = {
+    "User-Agent": "FightIQ/1.0 (portfolio RAG project; educational use; contact: dev@fightiq.local)"
+}
+_REQUEST_DELAY = 1.5   # seconds between HTTP requests
+_REQUEST_TIMEOUT = 15  # seconds
+
+
+def _url_encode(topic: str) -> str:
+    """URL-encode a Wikipedia topic string (stdlib, no requests internals)."""
+    return url_quote(topic.replace(" ", "_"), safe="")
+
+
+def _fetch_summary(topic: str) -> dict | None:
+    """Fetch the Wikipedia summary section via REST API."""
+    url = _SUMMARY_API.format(_url_encode(topic))
+    try:
+        resp = requests.get(url, headers=_HEADERS, timeout=_REQUEST_TIMEOUT)
+        resp.raise_for_status()
+        return resp.json()
+    except requests.HTTPError as exc:
+        log.warning(
+            "Wikipedia summary HTTP error",
+            topic=topic,
+            # exc.response is Optional[Response] — guard against None
+            status=getattr(exc.response, "status_code", "unknown"),
+        )
+        return None
+    except Exception:
+        log.exception("Unexpected error fetching Wikipedia summary", topic=topic)
+        return None
+
+
+def _fetch_full_text(topic: str) -> str | None:
+    """
+    Fetch and extract plain-text paragraphs from a Wikipedia article page.
+
+    Strips navigation boxes, infoboxes, references, and other non-content elements
+    to produce clean prose text suitable for chunking and embedding.
+    """
+    url = _WIKI_BASE.format(_url_encode(topic))
+    try:
+        resp = requests.get(url, headers=_HEADERS, timeout=_REQUEST_TIMEOUT)
+        resp.raise_for_status()
+    except requests.HTTPError as exc:
+        log.warning(
+            "Wikipedia page HTTP error",
+            topic=topic,
+            # exc.response is Optional[Response] — guard against None
+            status=getattr(exc.response, "status_code", "unknown"),
+        )
+        return None
+    except Exception:
+        log.exception("Unexpected error fetching Wikipedia page", topic=topic)
+        return None
+
+    soup = BeautifulSoup(resp.text, "html.parser")
+
+    # Remove non-content elements
+    for tag in soup.select(
+        ".infobox, .navbox, .vertical-navbox, .ambox, .dmbox, "
+        ".references, .reflist, .refbegin, .mw-editsection, "
+        ".toc, .hatnote, .sistersitebox, .portal-bar, "
+        "script, style, [class*='sidebar'], sup.reference"
+    ):
+        tag.decompose()
+
+    content_div = soup.select_one("#mw-content-text .mw-parser-output")
+    if not content_div:
+        log.warning("Could not find content div", topic=topic)
+        return None
+
+    paragraphs: list[str] = []
+    for element in content_div.children:
+        # Include paragraph and heading text
+        if hasattr(element, "name"):
+            if element.name == "p":
+                text = element.get_text(separator=" ").strip()
+                # Filter out very short/stub paragraphs
+                if len(text) > 60:
+                    paragraphs.append(text)
+            elif element.name in {"h2", "h3"}:
+                heading = element.get_text(separator=" ").strip()
+                if heading and heading not in {"Contents", "References", "External links"}:
+                    paragraphs.append(f"\n## {heading}\n")
+
+    return "\n\n".join(paragraphs) if paragraphs else None
+
+
+def scrape_topic(topic: str) -> dict | None:
+    """
+    Scrape a Wikipedia topic and return its title, content, and URL.
+
+    Returns None if the page cannot be found or scraped.
+    Content combines the REST API summary with full article text
+    to provide maximum context for the RAG system.
+    """
+    log.info("Scraping Wikipedia topic", topic=topic)
+
+    # 1. Fetch summary (fast, JSON)
+    summary_data = _fetch_summary(topic)
+    time.sleep(_REQUEST_DELAY)
+
+    # 2. Fetch full page text (HTML parse)
+    full_text = _fetch_full_text(topic)
+    time.sleep(_REQUEST_DELAY)
+
+    if not summary_data and not full_text:
+        log.warning("No content retrieved for topic", topic=topic)
+        return None
+
+    title = summary_data.get("title", topic) if summary_data else topic
+    summary = summary_data.get("extract", "") if summary_data else ""
+    wiki_url = f"https://en.wikipedia.org/wiki/{_url_encode(topic)}"
+
+    # Combine summary + full text
+    content_parts: list[str] = []
+    if summary:
+        content_parts.append(f"# {title}\n\n{summary}")
+    if full_text:
+        content_parts.append(full_text)
+
+    combined = "\n\n".join(content_parts)
+    if not combined.strip():
+        log.warning("Combined content is empty after processing", topic=topic)
+        return None
+
+    log.info(
+        "Topic scraped successfully",
+        topic=topic,
+        title=title,
+        content_length=len(combined),
+    )
+    return {
+        "title": title,
+        "content": combined,
+        "url": wiki_url,
+    }
+
+
+def scrape_topics(topics: list[str]) -> list[dict]:
+    """
+    Scrape multiple Wikipedia topics.
+
+    Skips failures and continues to the next topic.
+    Returns only successful results.
+    """
+    results: list[dict] = []
+    for topic in topics:
+        data = scrape_topic(topic)
+        if data:
+            results.append(data)
+        else:
+            log.warning("Skipping failed topic", topic=topic)
+    return results

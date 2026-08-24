@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+.Python
+.venv/
+venv/
+env/
+dist/
+build/
+*.egg-info/
+.eggs/
+*.egg
+
+# uv
+.uv/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.xml
+
+# Mypy / type checkers
+.mypy_cache/
+.dmypy.json
+
+# Ruff
+.ruff_cache/
+
+# Alembic
+# (keep migrations, but not auto-generated sqlite for testing)
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.npm/
+*.tsbuildinfo
+next-env.d.ts
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# Docker volumes (local mounts)
+postgres_data/
+
+# Logs
+*.log
+logs/

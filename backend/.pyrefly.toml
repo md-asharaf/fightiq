@@ -1,0 +1,15 @@
+# Pyrefly type-checker configuration.
+#
+# The project venv uses uv's isolated CPython 3.12 stored at a non-standard
+# path (~/.local/share/uv/python/...). Pyrefly's interpreter-based site-package
+# discovery resolves to the system Python 3.14 instead of the venv packages.
+#
+# Fix: bypass interpreter detection entirely with an explicit search_path.
+# These settings are also mirrored in pyproject.toml [tool.pyrefly] for
+# compatibility with IDE plugins that prefer pyproject.toml.
+
+python_version = "3.12"
+
+search_path = [
+    ".venv/lib/python3.12/site-packages",
+]
