@@ -71,12 +71,14 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
 
     auth_url = f"{settings.frontend_url.rstrip('/')}/api/auth/get-session"
     
+    from urllib.parse import urlparse
+    parsed_url = urlparse(settings.frontend_url)
+
     headers = {
         "cookie": request.headers.get("cookie", ""),
         "origin": settings.frontend_url,
+        "host": parsed_url.netloc,
     }
-    if host := request.headers.get("host"):
-        headers["host"] = host
     if auth_header := request.headers.get("Authorization"):
         headers["Authorization"] = auth_header
 
