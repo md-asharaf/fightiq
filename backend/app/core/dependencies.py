@@ -119,7 +119,7 @@ def require_admin(user: User = Depends(require_auth)) -> User:
 
 def get_chat_llm() -> BaseChatModel:
     return ChatGoogleGenerativeAI(
-        model=settings.llm_model,
+        model=settings.gemini_model,
         google_api_key=SecretStr(settings.google_api_key),
         max_output_tokens=4096,
         streaming=True,

@@ -20,8 +20,8 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "FightIQ"
-    frontend_url: str = "http://localhost:3000"
-    environment: str = "development"
+    frontend_url: str
+    environment: str
     log_level: str = "INFO"
 
     database_url: str
@@ -30,7 +30,6 @@ class Settings(BaseSettings):
     def get_db_config(self) -> tuple[str, dict]:
         url = self.database_url
 
-        # asyncpg does not support 'sslmode', it requires 'ssl'
         url = url.replace("?sslmode=require", "?ssl=require").replace(
             "&sslmode=require", "&ssl=require"
         )
@@ -50,17 +49,17 @@ class Settings(BaseSettings):
         return url, connect_args
 
     google_api_key: str
-    llm_model: str = "gemini-1.5-flash"
-    exa_api_key: str = ""
-    groq_api_key: str = ""
-    groq_model: str = "openai/gpt-oss-20b"
-    embedding_model: str = "models/gemini-embedding-2"
+    gemini_model: str
+    exa_api_key: str
+    groq_api_key: str
+    groq_model: str
+    embedding_model: str
     embedding_dimensions: int = 768
 
     chunk_size: int = 800
     chunk_overlap: int = 120
 
-    backend_cors_origins: list[str] = ["http://localhost:3000"]
+    backend_cors_origins: list[str]
 
     @field_validator("backend_cors_origins", mode="before")
     @classmethod
