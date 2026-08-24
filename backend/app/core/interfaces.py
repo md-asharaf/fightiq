@@ -49,12 +49,19 @@ class IEvalRepository(Protocol):
 
 class IQuizRepository(Protocol):
     async def create_session(
-        self, topic: str, category: str | None, difficulty: str, questions: list, user_id: str | None = None
+        self,
+        topic: str,
+        category: str | None,
+        difficulty: str,
+        questions: list,
+        user_id: str | None = None,
     ) -> QuizSession: ...
 
     async def get_session(self, session_id: uuid.UUID) -> QuizSession | None: ...
 
-    async def get_sessions(self, skip: int = 0, limit: int = 20, user_id: str | None = None) -> Sequence[QuizSession]: ...
+    async def get_sessions(
+        self, skip: int = 0, limit: int = 20, user_id: str | None = None
+    ) -> Sequence[QuizSession]: ...
 
     async def update_session(self, quiz_session: QuizSession) -> QuizSession: ...
 
@@ -64,4 +71,6 @@ class IQuizRepository(Protocol):
 
 
 class IWebSearchProvider(Protocol):
-    async def search(self, query: str, search_type: str, num_results: int = 3, use_cache: bool = True) -> str: ...
+    async def search(
+        self, query: str, search_type: str, num_results: int = 3, use_cache: bool = True
+    ) -> str: ...

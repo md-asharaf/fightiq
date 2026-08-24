@@ -28,6 +28,7 @@ def override_get_embedder():
 app.dependency_overrides[get_db] = override_get_db
 app.dependency_overrides[get_embedder] = override_get_embedder
 
+
 def override_require_admin():
     return User(
         id="test_admin_id",
@@ -38,6 +39,8 @@ def override_require_admin():
         createdAt=datetime.now(),
         updatedAt=datetime.now(),
     )
+
+
 app.dependency_overrides[require_admin] = override_require_admin
 
 

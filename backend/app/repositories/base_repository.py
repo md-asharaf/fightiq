@@ -19,4 +19,3 @@ class BaseRepository[ModelType: Base]:
 
     async def delete(self, obj: ModelType) -> None:
         await self.session.delete(obj)
-

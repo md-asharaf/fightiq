@@ -81,6 +81,7 @@ class ChatService:
                         sources.extend(extract_citations(observation))
                     elif isinstance(observation, str):
                         from app.utils.citation_extractor import extract_citations_from_string
+
                         sources.extend(extract_citations_from_string(observation))
 
         await self.repo.add_message(chat_session.id, "assistant", result["output"], sources)
@@ -112,6 +113,7 @@ class ChatService:
                     docs: Any = event["data"].get("output")
                     if isinstance(docs, str):
                         from app.utils.citation_extractor import extract_citations_from_string
+
                         citations = extract_citations_from_string(docs)
                         sources.extend(citations)
                         payload = json.dumps({"type": "sources", "sources": citations})

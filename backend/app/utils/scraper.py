@@ -94,6 +94,7 @@ def _fetch_generic_url(url: str) -> dict | None:
         main_content = soup.find("main") or soup.find("article") or soup.find("body") or soup
 
         from markdownify import markdownify as md
+
         text = md(str(main_content), heading_style="ATX", tables=True, strip=["a", "img"]).strip()
         title_str = str(soup.title.string) if soup.title and soup.title.string else url
 

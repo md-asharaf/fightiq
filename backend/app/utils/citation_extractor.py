@@ -32,6 +32,7 @@ def extract_citations(docs: list[Document]) -> list[dict[str, Any]]:
             )
     return citations
 
+
 def extract_citations_from_string(text: str) -> list[dict[str, Any]]:
     """Extract metadata from stringified web search tool outputs."""
     seen = set()
@@ -49,9 +50,11 @@ def extract_citations_from_string(text: str) -> list[dict[str, Any]]:
 
         if source and source not in seen:
             seen.add(source)
-            citations.append({
-                "title": title,
-                "category": "web",
-                "source": source,
-            })
+            citations.append(
+                {
+                    "title": title,
+                    "category": "web",
+                    "source": source,
+                }
+            )
     return citations

@@ -63,6 +63,7 @@ def chat_service():
     llm = FakeChatModel()
 
     from app.services.agent_factory import AgentFactory
+
     agent_factory = AgentFactory(db=db, embedder=embedder, llm=llm, search_tools=[])
 
     return ChatService(chat_repository=repo, agent_factory=agent_factory)

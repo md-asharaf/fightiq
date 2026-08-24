@@ -72,6 +72,7 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
     auth_url = f"{settings.frontend_url.rstrip('/')}/api/auth/get-session"
 
     from urllib.parse import urlparse
+
     parsed_url = urlparse(settings.frontend_url)
 
     headers = {
@@ -208,7 +209,12 @@ def get_search_provider(
     kg_repo = KnowledgeGraphRepository(session=session)
 
     return ExaSearchProvider(
-        settings.exa_api_key, cache_repo=cache_repo, kg_repo=kg_repo, embedder=embedder, llm=llm, db=session
+        settings.exa_api_key,
+        cache_repo=cache_repo,
+        kg_repo=kg_repo,
+        embedder=embedder,
+        llm=llm,
+        db=session,
     )
 
 

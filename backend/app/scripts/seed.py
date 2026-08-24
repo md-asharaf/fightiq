@@ -28,7 +28,9 @@ async def seed() -> None:
         ingestion_service = IngestionService(
             doc_repo=doc_repo, chunk_repo=chunk_repo, embedder=embedder, db=session
         )
-        seed_service = SeedService(doc_repo=doc_repo, ingestion_service=ingestion_service, db=session)
+        seed_service = SeedService(
+            doc_repo=doc_repo, ingestion_service=ingestion_service, db=session
+        )
 
         counts = await seed_service.seed_knowledge_base(force=False)
         total_seeded = sum(counts.values())
