@@ -1,9 +1,10 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 
 from app.core.dependencies import get_current_user, get_quiz_service
+from app.core.rate_limit import limiter
 from app.db.auth_models import User
 from app.schemas.quiz import (
     QuizGenerateRequest,
@@ -20,26 +21,30 @@ CurrentUserDep = Annotated[User | None, Depends(get_current_user)]
 
 
 @router.post("/generate", response_model=QuizSessionRead, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
 async def api_generate_quiz(
-    request: QuizGenerateRequest,
+    request: Request,
+    payload: QuizGenerateRequest,
     quiz_service: QuizServiceDep,
     current_user: CurrentUserDep,
 ):
     """Generate a new quiz based on a topic and save the session to the DB."""
     return await quiz_service.generate_quiz(
-        request, user_id=current_user.id if current_user else None
+        payload, user_id=current_user.id if current_user else None
     )
 
 
 @router.post("/submit", response_model=QuizSubmitResponse)
+@limiter.limit("20/minute")
 async def api_submit_quiz(
-    request: QuizSubmitRequest,
+    request: Request,
+    payload: QuizSubmitRequest,
     quiz_service: QuizServiceDep,
     current_user: CurrentUserDep,
 ):
     """Submit answers for a quiz session and get the graded results."""
     return await quiz_service.evaluate_quiz(
-        request, user_id=current_user.id if current_user else None
+        payload, user_id=current_user.id if current_user else None
     )
 
 

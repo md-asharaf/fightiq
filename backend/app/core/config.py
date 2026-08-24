@@ -50,9 +50,11 @@ class Settings(BaseSettings):
 
     google_api_key: str
     gemini_model: str
+    gemini_fallback_model: str = "gemini-3.5-flash-lite"
     exa_api_key: str
     groq_api_key: str
     groq_model: str
+    groq_fallback_model: str = "qwen/qwen3.6-27b"
     embedding_model: str
     embedding_dimensions: int = 768
 

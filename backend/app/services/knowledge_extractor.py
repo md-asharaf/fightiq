@@ -1,8 +1,10 @@
 import datetime
 import logging
+from typing import cast
 
 from langchain_core.language_models import BaseChatModel
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.knowledge_graph_repository import KnowledgeGraphRepository
 
@@ -64,9 +66,15 @@ class KnowledgeExtractionResult(BaseModel):
 class KnowledgeExtractor:
     """Extracts structured knowledge from web search results and upserts to SQL."""
 
-    def __init__(self, repo: KnowledgeGraphRepository, llm: BaseChatModel):
+    def __init__(
+        self,
+        repo: KnowledgeGraphRepository,
+        llm: BaseChatModel,
+        db: AsyncSession,
+    ):
         self.repo = repo
         self.llm = llm
+        self.db = db
 
     async def extract_and_ingest(self, query: str, raw_web_content: str) -> None:
         """Runs the extraction in the background and upserts into PostgreSQL."""
@@ -84,7 +92,7 @@ class KnowledgeExtractor:
                 "Do not extract opinions or unverified rumors."
             )
 
-            result: KnowledgeExtractionResult = await structured_llm.ainvoke(prompt)
+            result = cast(KnowledgeExtractionResult, await structured_llm.ainvoke(prompt))
 
             # 2. Upsert Fighters
             if result.fighters:
@@ -105,7 +113,7 @@ class KnowledgeExtractor:
                     await self.repo.upsert_event(data)
 
             if result.fighters or result.events:
-                await self.repo.commit()
+                await self.db.commit()
                 log.info(
                     f"Successfully upserted {len(result.fighters)} fighters and {len(result.events)} events."
                 )
@@ -114,4 +122,4 @@ class KnowledgeExtractor:
 
         except Exception as e:
             log.error(f"Error in background knowledge extraction: {e}")
-            await self.repo.rollback()
+            await self.db.rollback()

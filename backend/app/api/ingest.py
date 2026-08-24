@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
 
 from app.core.dependencies import get_ingestion_service, get_seed_service, require_admin
 from app.core.exceptions import ValidationError
 from app.core.logging import get_logger
+from app.core.rate_limit import limiter
 from app.db.auth_models import User
 from app.schemas.document import IngestResponse, IngestScrapeRequest, IngestSeedRequest
 from app.services.ingestion_service import IngestionService
@@ -96,16 +97,18 @@ async def ingest_file(
         "and embedding each topic/URL into the vector store."
     ),
 )
+@limiter.limit("5/minute")
 async def ingest_scrape(
-    request: IngestScrapeRequest,
+    request: Request,
+    payload: IngestScrapeRequest,
     ingestion_service: IngestionServiceDep,
     admin: User = Depends(require_admin),
 ):
-    log.info("Scrape requested", topics=request.topics, category=request.category)
+    log.info("Scrape requested", topics=payload.topics, category=payload.category)
 
     event_generator = ingestion_service.scrape_and_ingest_stream(
-        topics=request.topics,
-        category=request.category,
+        topics=payload.topics,
+        category=payload.category,
     )
 
     return StreamingResponse(event_generator, media_type="text/event-stream")

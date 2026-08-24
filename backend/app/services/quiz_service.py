@@ -1,4 +1,5 @@
 from langchain_core.language_models import BaseChatModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ResourceNotFoundError
 from app.core.interfaces import IQuizRepository
@@ -19,11 +20,13 @@ class QuizService:
         chunk_repository,
         embedder: Embedder,
         llm: BaseChatModel,
+        db: AsyncSession,
     ):
         self.repo = quiz_repository
         self.chunk_repo = chunk_repository
         self.embedder = embedder
         self.llm = llm
+        self.db = db
 
     async def generate_quiz(self, request: QuizGenerateRequest, user_id: str | None = None):
         query_embedding = await self.embedder.aembed_query(request.topic)
@@ -54,7 +57,7 @@ class QuizService:
             questions=[q.model_dump() for q in generated_data.questions],
             user_id=user_id,
         )
-        await self.repo.commit()
+        await self.db.commit()
         return quiz_session
 
     async def evaluate_quiz(self, request: QuizSubmitRequest, user_id: str | None = None):
@@ -63,7 +66,7 @@ class QuizService:
         quiz_result_db, response = evaluate_quiz(quiz_session, request)
 
         await self.repo.save_result(quiz_result_db)
-        await self.repo.commit()
+        await self.db.commit()
         return response
 
     async def get_sessions(self, skip: int = 0, limit: int = 20, user_id: str | None = None):

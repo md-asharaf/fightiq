@@ -54,4 +54,3 @@ class DocumentRepository(BaseRepository[Document]):
 
     async def soft_delete(self, doc: Document) -> None:
         doc.is_active = False
-        await self.session.commit()

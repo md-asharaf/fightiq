@@ -2,6 +2,7 @@ import asyncio
 
 from langchain_core.language_models import BaseChatModel
 from langchain_exa import ExaSearchRetriever
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.repositories.knowledge_graph_repository import KnowledgeGraphRepository
@@ -21,12 +22,14 @@ class ExaSearchProvider:
         kg_repo: KnowledgeGraphRepository,
         embedder: Embedder,
         llm: BaseChatModel,
+        db: AsyncSession,
     ):
         self.api_key = api_key
         self.cache_repo = cache_repo
         self.kg_repo = kg_repo
         self.embedder = embedder
         self.llm = llm
+        self.db = db
 
     async def search(
         self, query: str, search_type: str, num_results: int = 3, use_cache: bool = True
@@ -81,15 +84,15 @@ class ExaSearchProvider:
                     tool_name=search_type,
                     payload=payload,
                 )
-                await self.cache_repo.commit()
+                await self.db.commit()
             except Exception as e:
                 log.warning(f"Failed to save to semantic cache: {e}")
-                await self.cache_repo.rollback()
+                await self.db.rollback()
 
         # 4. Trigger background extraction
         from app.services.knowledge_extractor import KnowledgeExtractor
 
-        extractor = KnowledgeExtractor(repo=self.kg_repo, llm=self.llm)
+        extractor = KnowledgeExtractor(repo=self.kg_repo, llm=self.llm, db=self.db)
         asyncio.create_task(extractor.extract_and_ingest(query, payload))
 
         return payload

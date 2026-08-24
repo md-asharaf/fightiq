@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import attributes
 
 from app.core.exceptions import ResourceNotFoundError
@@ -21,15 +22,18 @@ class ChatService:
         self,
         chat_repository: IChatRepository,
         agent_factory: AgentFactory,
+        db: AsyncSession,
     ):
         self.repo = chat_repository
         self.agent_factory = agent_factory
+        self.db = db
 
     async def get_or_create_session(self, session_id_str: str, user_id: str | None = None):
         session_uuid = uuid.UUID(session_id_str)
         chat_session = await self.repo.get_session(session_uuid)
         if not chat_session:
             chat_session = await self.repo.create_session(session_uuid, user_id)
+            await self.db.commit()
         else:
             if chat_session.user_id and chat_session.user_id != user_id:
                 raise ResourceNotFoundError(f"Chat session '{session_id_str}' not found")
@@ -55,6 +59,7 @@ class ChatService:
                     history.append(AIMessage(content=m.content))
 
         await self.repo.add_message(chat_session.id, "user", message)
+        await self.db.commit()
 
         if stream:
             return self._stream_response(chat_session.id, message, history, filters)
@@ -75,6 +80,7 @@ class ChatService:
                     sources.extend(extract_citations(observation))
 
         await self.repo.add_message(chat_session.id, "assistant", result["output"], sources)
+        await self.db.commit()
 
         return ChatMessage(
             role="assistant",
@@ -124,20 +130,23 @@ class ChatService:
                     yield f"data: {payload}\n\n"
 
             await self.repo.add_message(session_id, "assistant", full_response, sources)
+            await self.db.commit()
 
         except asyncio.CancelledError:
             log.warning("Stream cancelled by client. Saving partial response.")
             if full_response:
                 await self.repo.add_message(session_id, "assistant", full_response, sources)
+                await self.db.commit()
             raise
         except Exception as e:
             log.error(f"Error during streaming response: {e}", exc_info=True)
             error_msg = "\n\n**Error**: An unexpected error occurred while generating the response. Please try again."
             payload = json.dumps({"type": "chunk", "content": error_msg})
             yield f"data: {payload}\n\n"
-            
+
             full_response += error_msg
             await self.repo.add_message(session_id, "assistant", full_response, sources)
+            await self.db.commit()
 
     async def get_history(self, session_id_str: str, user_id: str | None = None) -> ChatHistory:
         session_uuid = uuid.UUID(session_id_str)
@@ -180,4 +189,6 @@ class ChatService:
             raise ResourceNotFoundError(f"Chat session '{session_id_str}' not found")
 
         success = await self.repo.delete_session(session_uuid)
+        if success:
+            await self.db.commit()
         return success

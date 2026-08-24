@@ -70,7 +70,7 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
     import httpx
 
     auth_url = f"{settings.frontend_url.rstrip('/')}/api/auth/get-session"
-    
+
     from urllib.parse import urlparse
     parsed_url = urlparse(settings.frontend_url)
 
@@ -118,22 +118,79 @@ def require_admin(user: User = Depends(require_auth)) -> User:
 
 
 def get_chat_llm() -> BaseChatModel:
-    return ChatGoogleGenerativeAI(
+    from langchain_groq import ChatGroq
+
+    primary_llm = ChatGoogleGenerativeAI(
         model=settings.gemini_model,
         google_api_key=SecretStr(settings.google_api_key),
         max_output_tokens=4096,
         streaming=True,
+        max_retries=2,
     )
+
+    # Secondary Google Model
+    fallback_google = ChatGoogleGenerativeAI(
+        model=settings.gemini_fallback_model,
+        google_api_key=SecretStr(settings.google_api_key),
+        max_output_tokens=4096,
+        streaming=True,
+        max_retries=1,
+    )
+
+    # Primary Groq Model
+    fallback_groq_1 = ChatGroq(
+        model_name=settings.groq_model,
+        api_key=SecretStr(settings.groq_api_key) if settings.groq_api_key else None,
+        max_tokens=4096,
+        max_retries=1,
+    )
+
+    # Secondary Groq Model
+    fallback_groq_2 = ChatGroq(
+        model_name=settings.groq_fallback_model,
+        api_key=SecretStr(settings.groq_api_key) if settings.groq_api_key else None,
+        max_tokens=4096,
+        max_retries=1,
+    )
+
+    return primary_llm.with_fallbacks([fallback_google, fallback_groq_1, fallback_groq_2])  # type: ignore
 
 
 def get_fast_llm() -> BaseChatModel:
     from langchain_groq import ChatGroq
 
-    return ChatGroq(
-        model=settings.groq_model,
+    primary_llm = ChatGroq(
+        model_name=settings.groq_model,
         api_key=SecretStr(settings.groq_api_key) if settings.groq_api_key else None,
         max_tokens=4096,
+        max_retries=2,
     )
+
+    # Secondary Groq Model
+    fallback_groq = ChatGroq(
+        model_name=settings.groq_fallback_model,
+        api_key=SecretStr(settings.groq_api_key) if settings.groq_api_key else None,
+        max_tokens=4096,
+        max_retries=1,
+    )
+
+    # Secondary Google Model (Optimized for speed)
+    fallback_google_1 = ChatGoogleGenerativeAI(
+        model=settings.gemini_fallback_model,
+        google_api_key=SecretStr(settings.google_api_key),
+        max_output_tokens=4096,
+        max_retries=1,
+    )
+
+    # Primary Google Model (Heavy)
+    fallback_google_2 = ChatGoogleGenerativeAI(
+        model=settings.gemini_model,
+        google_api_key=SecretStr(settings.google_api_key),
+        max_output_tokens=4096,
+        max_retries=1,
+    )
+
+    return primary_llm.with_fallbacks([fallback_groq, fallback_google_1, fallback_google_2])  # type: ignore
 
 
 def get_search_provider(
@@ -149,25 +206,36 @@ def get_search_provider(
     kg_repo = KnowledgeGraphRepository(session=session)
 
     return ExaSearchProvider(
-        settings.exa_api_key, cache_repo=cache_repo, kg_repo=kg_repo, embedder=embedder, llm=llm
+        settings.exa_api_key, cache_repo=cache_repo, kg_repo=kg_repo, embedder=embedder, llm=llm, db=session
     )
 
 
 def get_search_tools(
     provider: IWebSearchProvider = Depends(get_search_provider), db: AsyncSession = Depends(get_db)
 ) -> list[BaseTool]:
+    async def normal_cached_search(query: str) -> str:
+        return await provider.search(query, "keyword", 3, use_cache=True)
+
     normal_tool_cached = StructuredTool.from_function(
-        coroutine=lambda query: provider.search(query, "keyword", 3, use_cache=True),
+        coroutine=normal_cached_search,
         name="normal_web_search",
         description="Search the web for quick, real-time facts (e.g. recent fights, stats, news). Uses a 24-hour cache for speed. Use this when the knowledge base lacks information.",
     )
+
+    async def normal_realtime_search(query: str) -> str:
+        return await provider.search(query, "keyword", 3, use_cache=False)
+
     normal_tool_realtime = StructuredTool.from_function(
-        coroutine=lambda query: provider.search(query, "keyword", 3, use_cache=False),
+        coroutine=normal_realtime_search,
         name="realtime_web_search",
         description="Bypasses the cache to search the web for to-the-minute breaking news or live updates. ONLY use this if the user specifically requests breaking news or live updates.",
     )
+
+    async def deep_cached_search(query: str) -> str:
+        return await provider.search(query, "neural", 5, use_cache=True)
+
     deep_tool = StructuredTool.from_function(
-        coroutine=lambda query: provider.search(query, "neural", 5, use_cache=True),
+        coroutine=deep_cached_search,
         name="deep_web_search",
         description="Search the web deeply for complex questions requiring extensive context or synthesis. Uses a 24-hour cache.",
     )
@@ -220,10 +288,11 @@ def get_agent_factory(
 def get_chat_service(
     repo: IChatRepository = Depends(get_chat_repository),
     agent_factory=Depends(get_agent_factory),
+    db: AsyncSession = Depends(get_db),
 ):
     from app.services.chat_service import ChatService
 
-    return ChatService(chat_repository=repo, agent_factory=agent_factory)
+    return ChatService(chat_repository=repo, agent_factory=agent_factory, db=db)
 
 
 def get_eval_repository(session: AsyncSession = Depends(get_db)) -> IEvalRepository:
@@ -263,11 +332,12 @@ def get_quiz_service(
     chunk_repo=Depends(get_chunk_repository),
     embedder: Embedder = Depends(get_embedder),
     llm: BaseChatModel = Depends(get_fast_llm),
+    db: AsyncSession = Depends(get_db),
 ):
     from app.services.quiz_service import QuizService
 
     return QuizService(
-        quiz_repository=repo, chunk_repository=chunk_repo, embedder=embedder, llm=llm
+        quiz_repository=repo, chunk_repository=chunk_repo, embedder=embedder, llm=llm, db=db
     )
 
 
@@ -291,16 +361,18 @@ def get_ingestion_service(
     doc_repo: IDocumentRepository = Depends(get_document_repository),
     chunk_repo=Depends(get_chunk_repository),
     embedder: Embedder = Depends(get_embedder),
+    db: AsyncSession = Depends(get_db),
 ):
     from app.services.ingestion_service import IngestionService
 
-    return IngestionService(doc_repo=doc_repo, chunk_repo=chunk_repo, embedder=embedder)
+    return IngestionService(doc_repo=doc_repo, chunk_repo=chunk_repo, embedder=embedder, db=db)
 
 
 def get_seed_service(
     doc_repo: IDocumentRepository = Depends(get_document_repository),
     ingestion_service=Depends(get_ingestion_service),
+    db: AsyncSession = Depends(get_db),
 ):
     from app.services.seed_service import SeedService
 
-    return SeedService(doc_repo=doc_repo, ingestion_service=ingestion_service)
+    return SeedService(doc_repo=doc_repo, ingestion_service=ingestion_service, db=db)

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.interfaces import IDocumentRepository
 from app.core.logging import get_logger
-from app.repositories.document_repository import DocumentRepository
 from app.services.ingestion_service import IngestionService
 
 log = get_logger(__name__)
@@ -21,11 +23,13 @@ CATEGORY_MAP: dict[str, str] = {
 class SeedService:
     def __init__(
         self,
-        doc_repo: DocumentRepository,
+        doc_repo: IDocumentRepository,
         ingestion_service: IngestionService,
+        db: AsyncSession,
     ):
         self.doc_repo = doc_repo
         self.ingestion_service = ingestion_service
+        self.db = db
 
     async def seed_knowledge_base(self, force: bool = False) -> dict[str, int]:
         """Ingest all seed documents from the data/ directory into the vector store."""
@@ -73,7 +77,7 @@ class SeedService:
                         category=category,
                     )
                 except Exception:
-                    await self.doc_repo.rollback()
+                    await self.db.rollback()
                     log.exception(
                         "Failed to ingest seed file — skipping",
                         file=str(file_path),

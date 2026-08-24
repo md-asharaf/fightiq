@@ -5,11 +5,13 @@ import uuid
 from collections.abc import AsyncGenerator
 from pathlib import Path
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.exceptions import ValidationError
+from app.core.interfaces import IDocumentRepository
 from app.core.logging import get_logger
 from app.db.models import Chunk, Document
 from app.repositories.chunk_repository import ChunkRepository
-from app.repositories.document_repository import DocumentRepository
 from app.utils.document_loader import load_file, load_file_from_path
 from app.utils.embedder import Embedder
 from app.utils.scraper import scrape_topics_generator
@@ -27,13 +29,15 @@ class IngestionService:
 
     def __init__(
         self,
-        doc_repo: DocumentRepository,
+        doc_repo: IDocumentRepository,
         chunk_repo: ChunkRepository,
         embedder: Embedder,
+        db: AsyncSession,
     ):
         self.doc_repo = doc_repo
         self.chunk_repo = chunk_repo
         self.embedder = embedder
+        self.db = db
 
     async def ingest_text(
         self,
@@ -70,7 +74,7 @@ class IngestionService:
 
         if not lc_chunks:
             log.warning("Document produced no chunks — skipping", title=title)
-            await self.doc_repo.commit()
+            await self.db.commit()
             return doc
 
         log.info("Document chunked", title=title, num_chunks=len(lc_chunks))
@@ -103,7 +107,7 @@ class IngestionService:
 
         await self.chunk_repo.add_chunks(chunk_records)
         doc.chunk_count = len(chunk_records)
-        await self.doc_repo.commit()
+        await self.db.commit()
 
         log.info(
             "Document ingested",
