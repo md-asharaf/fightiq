@@ -26,6 +26,21 @@ def override_get_embedder():
 app.dependency_overrides[get_db] = override_get_db
 app.dependency_overrides[get_embedder] = override_get_embedder
 
+from app.core.dependencies import require_admin
+from app.db.auth_models import User
+from datetime import datetime
+def override_require_admin():
+    return User(
+        id="test_admin_id",
+        name="Admin User",
+        email="admin@test.com",
+        emailVerified=True,
+        role="admin",
+        createdAt=datetime.now(),
+        updatedAt=datetime.now(),
+    )
+app.dependency_overrides[require_admin] = override_require_admin
+
 
 @pytest.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:

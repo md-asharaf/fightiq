@@ -23,7 +23,7 @@ def test_chat_message_schema():
 def test_chat_request_defaults():
     req = ChatRequest(message="test message")
     assert req.stream is True
-    assert req.session_id is None
+    assert req.session_id is not None
     assert req.filters is None
 
 

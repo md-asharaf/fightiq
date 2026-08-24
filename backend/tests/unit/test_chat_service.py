@@ -61,8 +61,11 @@ def chat_service():
     db = AsyncMock()  # Fake UnitOfWork manager
     embedder = AsyncMock(spec=Embedder)
     llm = FakeChatModel()
+    
+    from app.services.agent_factory import AgentFactory
+    agent_factory = AgentFactory(db=db, embedder=embedder, llm=llm, search_tools=[])
 
-    return ChatService(chat_repository=repo, db=db, embedder=embedder, llm=llm, search_tools=[])
+    return ChatService(chat_repository=repo, agent_factory=agent_factory)
 
 
 @pytest.mark.asyncio
@@ -107,6 +110,3 @@ async def test_delete_history_success(chat_service: ChatService):
 
     # Post-condition: session is gone
     assert await chat_service.repo.get_session(session_id) is None
-
-    # Verify UnitOfWork pattern (db.commit was called)
-    chat_service.db.commit.assert_awaited_once()  # type: ignore

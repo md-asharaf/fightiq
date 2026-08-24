@@ -70,12 +70,18 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
     import httpx
 
     auth_url = f"{settings.frontend_url.rstrip('/')}/api/auth/get-session"
-    headers = {"cookie": request.headers.get("cookie", "")}
+    
+    headers = {
+        "cookie": request.headers.get("cookie", ""),
+        "origin": settings.frontend_url,
+    }
+    if host := request.headers.get("host"):
+        headers["host"] = host
     if auth_header := request.headers.get("Authorization"):
         headers["Authorization"] = auth_header
 
     try:
-        async with httpx.AsyncClient(timeout=2.0) as client:
+        async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(auth_url, headers=headers)
             if resp.status_code == 200:
                 data = resp.json()
