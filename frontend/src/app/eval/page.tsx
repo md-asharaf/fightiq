@@ -1,44 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { ShieldCheck, PlayCircle, Loader2 } from "lucide-react";
-import { fetchApi } from "@/lib/api";
+import { useEval } from "@/hooks/useEval";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { MetricCard } from "@/components/eval/MetricCard";
+import { ScoreBadge } from "@/components/eval/ScoreBadge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function EvalDashboard() {
-  const [results, setResults] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [evaluating, setEvaluating] = useState(false);
+  const { results, loading, evaluating, loadResults, runEvaluation } = useEval();
 
   useEffect(() => {
     loadResults();
-  }, []);
-
-  const loadResults = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchApi("/eval/results");
-      setResults(data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [loadResults]);
 
   const handleRunEval = async () => {
-    setEvaluating(true);
     try {
-      await fetchApi("/eval/run", { method: "POST" });
-      await loadResults();
-      alert("Evaluation completed successfully!");
+      await runEvaluation();
     } catch (error: any) {
       alert("Failed to run evaluation: " + error.message);
-    } finally {
-      setEvaluating(false);
     }
   };
 
@@ -49,10 +42,27 @@ export default function EvalDashboard() {
           <h1 className="text-3xl font-bold tracking-tight">RAG Evaluation Dashboard</h1>
           <p className="text-muted-foreground">Monitor the quality of the AI responses using Ragas metrics.</p>
         </div>
-        <Button onClick={handleRunEval} disabled={evaluating} className="bg-red-600 hover:bg-red-700 text-white">
-          {evaluating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
-          {evaluating ? "Evaluating..." : "Run Evaluation"}
-        </Button>
+        
+        <AlertDialog>
+          <AlertDialogTrigger 
+            render={<Button disabled={evaluating} className="bg-red-600 hover:bg-red-700 text-white" />}
+          >
+            {evaluating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+            {evaluating ? "Evaluating..." : "Run Evaluation"}
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Run RAG Evaluation?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will trigger the generation and evaluation of answers against the golden dataset using the LLM. It may take several minutes to complete and consumes LLM tokens.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleRunEval} className="bg-red-600 text-white hover:bg-red-700">Run Evaluation</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <div className="grid md:grid-cols-4 gap-4">
@@ -109,33 +119,5 @@ export default function EvalDashboard() {
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-function MetricCard({ title, desc }: { title: string, desc: string }) {
-  return (
-    <Card className="bg-card/50">
-      <CardHeader className="p-4">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="p-4 pt-0">
-        <div className="text-2xl font-bold">--</div>
-        <p className="text-xs text-muted-foreground mt-1">{desc}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ScoreBadge({ score }: { score: number | null }) {
-  if (score === null || score === undefined) return <span className="text-muted-foreground">N/A</span>;
-  
-  let color = "bg-red-500/20 text-red-500";
-  if (score >= 0.8) color = "bg-green-500/20 text-green-500";
-  else if (score >= 0.6) color = "bg-yellow-500/20 text-yellow-500";
-
-  return (
-    <Badge variant="outline" className={`${color} border-transparent font-bold`}>
-      {score.toFixed(2)}
-    </Badge>
   );
 }

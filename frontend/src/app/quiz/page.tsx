@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { BrainCircuit, Loader2 } from "lucide-react";
-import { fetchApi } from "@/lib/api";
+import { useQuizList } from "@/hooks/useQuiz";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,23 +14,15 @@ import { Badge } from "@/components/ui/badge";
 
 export default function QuizConfigPage() {
   const router = useRouter();
+  const { sessions, loadSessions, generateQuiz } = useQuizList();
+  
   const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState("intermediate");
   const [loading, setLoading] = useState(false);
-  const [sessions, setSessions] = useState<any[]>([]);
 
   useEffect(() => {
     loadSessions();
-  }, []);
-
-  const loadSessions = async () => {
-    try {
-      const data = await fetchApi("/quiz/sessions");
-      setSessions(data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  }, [loadSessions]);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,15 +30,8 @@ export default function QuizConfigPage() {
 
     setLoading(true);
     try {
-      const response = await fetchApi("/quiz/generate", {
-        method: "POST",
-        body: JSON.stringify({
-          topic,
-          difficulty,
-          num_questions: 5,
-        }),
-      });
-      router.push(`/quiz/${response.id}`);
+      const sessionId = await generateQuiz(topic, difficulty);
+      router.push(`/quiz/${sessionId}`);
     } catch (error: any) {
       alert("Failed to generate quiz: " + error.message);
       setLoading(false);

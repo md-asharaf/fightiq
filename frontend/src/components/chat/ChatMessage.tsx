@@ -4,16 +4,12 @@ import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Badge } from "@/components/ui/badge";
-
-interface Source {
-  source_id: string;
-  title: string;
-}
+import { ChatSource } from "@/types";
 
 export interface MessageProps {
   role: "user" | "assistant";
   content: string;
-  sources?: Source[];
+  sources?: ChatSource[];
 }
 
 export function ChatMessage({ role, content, sources }: MessageProps) {

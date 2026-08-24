@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Upload, Database, Globe, RefreshCcw } from "lucide-react";
-import { fetchApi, uploadFile } from "@/lib/api";
+import { useAdmin } from "@/hooks/useAdmin";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,41 +10,23 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function AdminPage() {
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [seeding, setSeeding] = useState(false);
+  const { documents, loading, seeding, loadDocuments, seedData, uploadDoc, scrapeUrl } = useAdmin();
   const [file, setFile] = useState<File | null>(null);
   const [category, setCategory] = useState("fighters");
-  const [scrapeUrl, setScrapeUrl] = useState("");
-
-  const loadDocuments = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchApi("/documents");
-      setDocuments(data);
-    } catch (error) {
-      console.error("Failed to load documents", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [url, setUrl] = useState("");
 
   useEffect(() => {
     loadDocuments();
-  }, []);
+  }, [loadDocuments]);
 
   const handleSeed = async () => {
-    setSeeding(true);
     try {
-      await fetchApi("/ingest/seed", { method: "POST" });
-      await loadDocuments();
-      alert("Seed completed successfully!");
+      await seedData();
     } catch (error: any) {
       alert("Failed to seed: " + error.message);
-    } finally {
-      setSeeding(false);
     }
   };
 
@@ -53,10 +35,8 @@ export default function AdminPage() {
     if (!file) return;
 
     try {
-      await uploadFile("/ingest/file", file, { category });
+      await uploadDoc(file, category);
       setFile(null);
-      await loadDocuments();
-      alert("File uploaded successfully!");
     } catch (error: any) {
       alert("Upload failed: " + error.message);
     }
@@ -64,16 +44,11 @@ export default function AdminPage() {
 
   const handleScrape = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!scrapeUrl) return;
+    if (!url) return;
 
     try {
-      await fetchApi("/ingest/scrape", {
-        method: "POST",
-        body: JSON.stringify({ url: scrapeUrl, category }),
-      });
-      setScrapeUrl("");
-      await loadDocuments();
-      alert("URL scraped successfully!");
+      await scrapeUrl(url, category);
+      setUrl("");
     } catch (error: any) {
       alert("Scrape failed: " + error.message);
     }
@@ -86,10 +61,27 @@ export default function AdminPage() {
           <h1 className="text-3xl font-bold tracking-tight">Knowledge Base Admin</h1>
           <p className="text-muted-foreground">Manage UFC documents, trigger seeding, and run web scrapers.</p>
         </div>
-        <Button onClick={handleSeed} disabled={seeding} className="bg-red-600 hover:bg-red-700 text-white">
-          {seeding ? <RefreshCcw className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
-          {seeding ? "Seeding Data..." : "Seed Curated Data"}
-        </Button>
+        
+        <AlertDialog>
+          <AlertDialogTrigger 
+            render={<Button disabled={seeding} className="bg-red-600 hover:bg-red-700 text-white" />}
+          >
+            {seeding ? <RefreshCcw className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
+            {seeding ? "Seeding Data..." : "Seed Curated Data"}
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action will trigger the ingestion pipeline to parse, chunk, and embed all predefined UFC seed files. This might take a minute or two.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleSeed} className="bg-red-600 text-white hover:bg-red-700">Continue</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
@@ -148,9 +140,9 @@ export default function AdminPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="url">URL</Label>
-                <Input id="url" type="url" placeholder="https://en.wikipedia.org/wiki/..." value={scrapeUrl} onChange={(e) => setScrapeUrl(e.target.value)} required />
+                <Input id="url" type="url" placeholder="https://en.wikipedia.org/wiki/..." value={url} onChange={(e) => setUrl(e.target.value)} required />
               </div>
-              <Button type="submit" disabled={!scrapeUrl} variant="secondary" className="w-full">Scrape & Process</Button>
+              <Button type="submit" disabled={!url} variant="secondary" className="w-full">Scrape & Process</Button>
             </form>
           </CardContent>
         </Card>

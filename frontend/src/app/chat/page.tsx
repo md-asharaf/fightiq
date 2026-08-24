@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
+import { ChatSource } from "@/types";
 
 // We generate a simple session ID on mount for demonstration.
 // In a real app, this would be persisted to localStorage or backend.
@@ -69,7 +70,7 @@ export default function ChatPage() {
       const decoder = new TextDecoder("utf-8");
       
       let fullContent = "";
-      let sources: any[] = [];
+      let sources: ChatSource[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
