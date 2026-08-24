@@ -76,8 +76,12 @@ class ChatService:
         search_tools = {"normal_web_search", "realtime_web_search", "deep_web_search"}
         if "intermediate_steps" in result:
             for action, observation in result["intermediate_steps"]:
-                if action.tool in search_tools and isinstance(observation, list):
-                    sources.extend(extract_citations(observation))
+                if action.tool in search_tools:
+                    if isinstance(observation, list):
+                        sources.extend(extract_citations(observation))
+                    elif isinstance(observation, str):
+                        from app.utils.citation_extractor import extract_citations_from_string
+                        sources.extend(extract_citations_from_string(observation))
 
         await self.repo.add_message(chat_session.id, "assistant", result["output"], sources)
         await self.db.commit()
@@ -105,6 +109,19 @@ class ChatService:
             ):
                 kind = event["event"]
                 if kind == "on_tool_end" and event["name"] in search_tools:
+                    docs: Any = event["data"].get("output")
+                    if isinstance(docs, str):
+                        from app.utils.citation_extractor import extract_citations_from_string
+                        citations = extract_citations_from_string(docs)
+                        sources.extend(citations)
+                        payload = json.dumps({"type": "sources", "sources": citations})
+                        yield f"data: {payload}\n\n"
+                    elif isinstance(docs, list):
+                        citations = extract_citations(docs)
+                        sources.extend(citations)
+                        payload = json.dumps({"type": "sources", "sources": citations})
+                        yield f"data: {payload}\n\n"
+                elif kind == "on_retriever_end":
                     docs: Any = event["data"].get("output", [])
                     if isinstance(docs, list):
                         citations = extract_citations(docs)

@@ -31,3 +31,27 @@ def extract_citations(docs: list[Document]) -> list[dict[str, Any]]:
                 },
             )
     return citations
+
+def extract_citations_from_string(text: str) -> list[dict[str, Any]]:
+    """Extract metadata from stringified web search tool outputs."""
+    seen = set()
+    citations = []
+    blocks = text.split("\n\n")
+    for block in blocks:
+        lines = block.split("\n")
+        title = "Unknown Source"
+        source = ""
+        for line in lines:
+            if line.startswith("Title: "):
+                title = line[7:].strip()
+            elif line.startswith("Source: "):
+                source = line[8:].strip()
+        
+        if source and source not in seen:
+            seen.add(source)
+            citations.append({
+                "title": title,
+                "category": "web",
+                "source": source,
+            })
+    return citations

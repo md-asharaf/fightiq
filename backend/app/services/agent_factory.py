@@ -60,6 +60,8 @@ You MUST follow this strict "waterfall" logic to answer questions:
 2. SEMANTIC RULES/HISTORY SECOND: If the query is about rules, historical contexts, or things not found in the SQL tables, use `search_knowledge_base` to search the vector database.
 3. WEB SEARCH AS FALLBACK: If (and ONLY if) the internal databases do not contain the answer, or if the user asks for breaking news/rumors, use `normal_web_search` (cached) or `realtime_web_search` (uncached, for live updates).
 
+CRITICAL FORMATTING RULE: If you ever need to output raw data, JSON, or code, you MUST format it inside triple backticks (e.g., ```json ... ```). NEVER output raw JSON or code as plain text. Ensure your human analysis is completely separated from the data blocks.
+
 When citing sources, format them properly.""",
                 ),
                 MessagesPlaceholder(variable_name="chat_history"),
