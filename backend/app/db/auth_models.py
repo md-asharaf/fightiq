@@ -46,8 +46,13 @@ class Account(Base):
     providerId: Mapped[str] = mapped_column(String(255), nullable=False)  # noqa: N815
     accessToken: Mapped[str | None] = mapped_column(Text, nullable=True)  # noqa: N815
     refreshToken: Mapped[str | None] = mapped_column(Text, nullable=True)  # noqa: N815
+    idToken: Mapped[str | None] = mapped_column(Text, nullable=True)  # noqa: N815
     expiresAt: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # noqa: N815
+    accessTokenExpiresAt: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # noqa: N815
+    refreshTokenExpiresAt: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # noqa: N815
+    scope: Mapped[str | None] = mapped_column(Text, nullable=True)
     password: Mapped[str | None] = mapped_column(Text, nullable=True)
+    issuer: Mapped[str | None] = mapped_column(Text, nullable=True)
     createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)  # noqa: N815
     updatedAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)  # noqa: N815
 

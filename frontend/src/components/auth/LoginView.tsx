@@ -3,17 +3,18 @@
 import { useState } from "react";
 import { signIn } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 
-export function LoginView() {
+export function LoginView({ defaultIsLogin = true }: { defaultIsLogin?: boolean }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLogin, setIsLogin] = useState(true);
+  const isLogin = defaultIsLogin;
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,7 +66,7 @@ export function LoginView() {
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md bg-card border-border shadow-sm rounded-none">
         <CardHeader className="space-y-1 border-b border-border bg-muted/30">
-          <CardTitle className="text-2xl font-black uppercase tracking-tighter text-foreground">
+          <CardTitle className="text-2xl font-extrabold tracking-tight text-foreground">
             {isLogin ? "Sign In" : "Create Account"}
           </CardTitle>
           <CardDescription className="text-muted-foreground font-medium">
@@ -77,7 +78,7 @@ export function LoginView() {
         <CardContent className="pt-6 space-y-4">
           <Button
             variant="outline"
-            className="w-full h-12 bg-background border-border hover:bg-accent text-foreground rounded-none font-bold uppercase tracking-wider"
+            className="w-full h-12 bg-background border-border hover:bg-accent text-foreground rounded-none font-bold"
             onClick={handleGoogleSignIn}
           >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -106,14 +107,14 @@ export function LoginView() {
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-border" />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground font-bold tracking-widest">Or continue with</span>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-card px-2 text-muted-foreground font-bold">Or continue with</span>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Email</Label>
+              <Label htmlFor="email" className="text-xs font-bold text-muted-foreground">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -125,7 +126,7 @@ export function LoginView() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Password</Label>
+              <Label htmlFor="password" className="text-xs font-bold text-muted-foreground">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -138,20 +139,19 @@ export function LoginView() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 font-bold uppercase tracking-wider rounded-none"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 font-bold rounded-none"
             >
               {loading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
             </Button>
           </form>
 
           <div className="text-center mt-4">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-xs text-muted-foreground hover:text-foreground font-medium underline underline-offset-4 uppercase tracking-wider"
+            <Link
+              href={isLogin ? "/signup" : "/login"}
+              className="text-xs text-muted-foreground hover:text-foreground font-medium underline underline-offset-4"
             >
               {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
-            </button>
+            </Link>
           </div>
         </CardContent>
       </Card>

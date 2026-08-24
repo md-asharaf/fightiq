@@ -1,6 +1,5 @@
 from langchain_core.language_models import BaseChatModel
 
-
 from app.core.exceptions import ResourceNotFoundError
 from app.core.interfaces import IQuizRepository
 from app.schemas.quiz import (
@@ -29,7 +28,7 @@ class QuizService:
             category=request.category,
             fighter=request.fighter,
         )
-        
+
         context_str = "\n\n".join(
             f"Document Title: {c['metadata'].get('title', 'Unknown')}\n{c['content']}"
             for c in chunks_with_scores
@@ -54,9 +53,9 @@ class QuizService:
 
     async def evaluate_quiz(self, request: QuizSubmitRequest):
         quiz_session = await self.get_session(request.session_id)
-        
+
         quiz_result_db, response = evaluate_quiz(quiz_session, request)
-        
+
         await self.repo.save_result(quiz_result_db)
         await self.repo.commit()
         return response

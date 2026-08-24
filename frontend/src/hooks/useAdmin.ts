@@ -2,16 +2,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi, uploadFile } from "@/lib/api";
 import { Document } from "@/types";
 
-export function useAdmin() {
+export function useAdmin(page: number = 1, pageSize: number = 10) {
   const queryClient = useQueryClient();
 
-  const { data: documents = [], isLoading: loading, refetch: loadDocuments } = useQuery<Document[]>({
-    queryKey: ["documents"],
+  const { data: documentsData, isLoading, isFetching, refetch: loadDocuments } = useQuery<{ items: Document[], total: number }>({
+    queryKey: ["documents", page, pageSize],
     queryFn: async () => {
-      const res = await fetchApi("/documents");
-      return res.items || [];
+      return await fetchApi(`/documents?page=${page}&page_size=${pageSize}`);
     },
   });
+
+  const documents = documentsData?.items || [];
+  const totalDocuments = documentsData?.total || 0;
 
   const seedMutation = useMutation({
     mutationFn: () => fetchApi("/ingest/seed", { method: "POST" }),
@@ -55,7 +57,9 @@ export function useAdmin() {
 
   return {
     documents,
-    loading,
+    totalDocuments,
+    isLoading,
+    isFetching,
     seeding: seedMutation.isPending,
     uploading: uploadMutation.isPending,
     loadDocuments,

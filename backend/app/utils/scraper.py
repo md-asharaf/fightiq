@@ -13,7 +13,9 @@ log = get_logger(__name__)
 _SUMMARY_API = "https://en.wikipedia.org/api/rest_v1/page/summary/{}"
 _WIKI_BASE = "https://en.wikipedia.org/wiki/{}"
 _HEADERS = {
-    "User-Agent": "FightIQ/1.0 (portfolio RAG project; educational use; contact: dev@fightiq.local)",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
 }
 _REQUEST_DELAY = 1.5
 _REQUEST_TIMEOUT = 15

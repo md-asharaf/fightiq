@@ -32,8 +32,8 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     from app.services.seed_service import seed_knowledge_base
 
     async with AsyncSessionLocal() as session:
-        from app.repositories.document_repository import DocumentRepository
         from app.repositories.chunk_repository import ChunkRepository
+        from app.repositories.document_repository import DocumentRepository
         doc_repo = DocumentRepository(session=session)
         chunk_repo = ChunkRepository(session=session)
         counts = await seed_knowledge_base(doc_repo=doc_repo, chunk_repo=chunk_repo, embedder=embedder, force=False)

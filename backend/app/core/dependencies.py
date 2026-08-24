@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncGenerator
 
 from fastapi import Depends, HTTPException, Request, status
@@ -18,10 +19,12 @@ from app.core.interfaces import (
     IQuizRepository,
     IWebSearchProvider,
 )
-from app.db.auth_models import Session as AuthSession
 from app.db.auth_models import User
 from app.db.session import AsyncSessionLocal
 from app.utils.embedder import Embedder
+
+log = logging.getLogger(__name__)
+
 
 _embedder: Embedder | None = None
 
@@ -64,9 +67,29 @@ async def get_current_user(
     if not token:
         return None
 
-    stmt = select(User).join(AuthSession, User.id == AuthSession.userId).where(AuthSession.token == token)
-    result = await db.execute(stmt)
-    return result.scalar_one_or_none()
+    # Verify session using Better-Auth API
+    import httpx
+
+    auth_url = "http://localhost:3000/api/auth/get-session"
+    headers = {"cookie": request.headers.get("cookie", "")}
+    if auth_header := request.headers.get("Authorization"):
+        headers["Authorization"] = auth_header
+
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            resp = await client.get(auth_url, headers=headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                if "user" in data and "id" in data["user"]:
+                    user_id = data["user"]["id"]
+                    stmt = select(User).where(User.id == user_id)
+                    result = await db.execute(stmt)
+                    return result.scalar_one_or_none()
+    except Exception as e:
+        log.error(f"Error validating session with Better-Auth: {e}")
+
+    log.warning("Auth failed: Token rejected by Better-Auth")
+    return None
 
 
 def require_auth(user: User | None = Depends(get_current_user)) -> User:
@@ -82,7 +105,7 @@ def get_chat_llm() -> BaseChatModel:
     return ChatGoogleGenerativeAI(
         model=settings.llm_model,
         google_api_key=SecretStr(settings.google_api_key),
-        max_output_tokens=1024,
+        max_output_tokens=4096,
         streaming=True,
     )
 
@@ -92,7 +115,7 @@ def get_fast_llm() -> BaseChatModel:
     return ChatGroq(
         model=settings.groq_model,
         api_key=SecretStr(settings.groq_api_key) if settings.groq_api_key else None,
-        max_tokens=1024,
+        max_tokens=4096,
     )
 
 
@@ -101,18 +124,18 @@ def get_search_provider(
     embedder: Embedder = Depends(get_embedder),
     llm: BaseChatModel = Depends(get_fast_llm),
 ) -> IWebSearchProvider:
-    from app.utils.tools import ExaSearchProvider
-    from app.repositories.tool_cache_repository import ToolCacheRepository
     from app.repositories.knowledge_graph_repository import KnowledgeGraphRepository
-    
+    from app.repositories.tool_cache_repository import ToolCacheRepository
+    from app.utils.tools import ExaSearchProvider
+
     cache_repo = ToolCacheRepository(session=session)
     kg_repo = KnowledgeGraphRepository(session=session)
-    
+
     return ExaSearchProvider(
-        settings.exa_api_key, 
-        cache_repo=cache_repo, 
-        kg_repo=kg_repo, 
-        embedder=embedder, 
+        settings.exa_api_key,
+        cache_repo=cache_repo,
+        kg_repo=kg_repo,
+        embedder=embedder,
         llm=llm
     )
 
@@ -136,10 +159,10 @@ def get_search_tools(
         name="deep_web_search",
         description="Search the web deeply for complex questions requiring extensive context or synthesis. Uses a 24-hour cache.",
     )
-    
+
     from app.services.database_tool_service import DatabaseToolService
     db_tool_service = DatabaseToolService(db)
-            
+
     sql_tool = StructuredTool.from_function(
         coroutine=db_tool_service.execute_query,
         name="query_database",
@@ -206,7 +229,7 @@ def get_eval_service(
 def get_quiz_repository(session: AsyncSession = Depends(get_db)) -> IQuizRepository:
     from app.repositories.quiz_repository import QuizRepository
     return QuizRepository(session=session)
-    
+
 def get_chunk_repository(session: AsyncSession = Depends(get_db)):
     from app.repositories.chunk_repository import ChunkRepository
     return ChunkRepository(session=session)
@@ -233,3 +256,20 @@ def get_document_service(
 ):
     from app.services.document_service import DocumentService
     return DocumentService(document_repository=repo, db=db, embedder=embedder)
+
+
+def get_ingestion_service(
+    doc_repo: IDocumentRepository = Depends(get_document_repository),
+    chunk_repo = Depends(get_chunk_repository),
+    embedder: Embedder = Depends(get_embedder),
+):
+    from app.services.ingestion_service import IngestionService
+    return IngestionService(doc_repo=doc_repo, chunk_repo=chunk_repo, embedder=embedder)
+
+
+def get_seed_service(
+    doc_repo: IDocumentRepository = Depends(get_document_repository),
+    ingestion_service = Depends(get_ingestion_service),
+):
+    from app.services.seed_service import SeedService
+    return SeedService(doc_repo=doc_repo, ingestion_service=ingestion_service)

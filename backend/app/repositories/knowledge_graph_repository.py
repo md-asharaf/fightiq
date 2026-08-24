@@ -1,10 +1,11 @@
-import uuid
 from typing import Any
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.dialects.postgresql import insert
 
-from app.db.models import Fighter, Event
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.models import Event, Fighter
 from app.repositories.base_repository import BaseRepository
+
 
 class KnowledgeGraphRepository(BaseRepository[Fighter]):
     def __init__(self, session: AsyncSession):

@@ -1,6 +1,6 @@
 import json
 import uuid
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator
 from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
@@ -10,9 +10,8 @@ from app.core.exceptions import ResourceNotFoundError
 from app.core.interfaces import IChatRepository
 from app.core.logging import get_logger
 from app.schemas.chat import ChatHistory, ChatMessage
-from app.utils.citation_extractor import extract_citations
-from app.utils.citation_extractor import extract_citations
 from app.services.agent_factory import AgentFactory
+from app.utils.citation_extractor import extract_citations
 
 log = get_logger(__name__)
 
@@ -89,6 +88,7 @@ class ChatService:
                     docs: Any = event["data"].get("output", [])
                     if isinstance(docs, list):
                         citations = extract_citations(docs)
+                        sources.extend(citations)
                         payload = json.dumps({"type": "sources", "sources": citations})
                         yield f"data: {payload}\n\n"
                 elif kind == "on_chat_model_stream":

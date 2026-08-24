@@ -5,10 +5,10 @@ from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import BaseTool, create_retriever_tool
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.utils.embedder import Embedder
 from app.utils.retriever import UFCRetriever
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class AgentFactory:
@@ -56,4 +56,4 @@ When citing sources, format them properly."""),
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ])
         agent = create_tool_calling_agent(self.llm, tools, prompt)
-        return AgentExecutor(agent=agent, tools=tools, verbose=True)
+        return AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=5)

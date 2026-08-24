@@ -6,40 +6,40 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Brain, MessageSquare, History, ShieldAlert, Zap, BarChart } from "lucide-react";
+import { Brain, MessageSquare, History, ShieldAlert, Zap, BarChart, Cpu } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 w-full overflow-hidden">
+    <div className="flex flex-col w-full">
       {/* Elevated Hero Section */}
       <section className="relative w-full py-32 md:py-48 lg:py-64 flex items-center justify-center border-b border-border bg-background overflow-hidden">
         {/* Glow Effects */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCI+PHBhdGggZD0iTTMwIDBMMzAgNjBNMCAzMEw2MCAzMCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiLz48L3N2Zz4=')]" />
 
-        <div className="container px-4 md:px-6 relative z-10">
+        <div className="container px-4 md:px-6 mx-auto relative z-10">
           <div className="flex flex-col items-center space-y-8 text-center max-w-5xl mx-auto">
             <div className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-medium text-primary mb-4 backdrop-blur-sm">
               <Zap className="mr-2 h-4 w-4" />
               Powered by Advanced RAG Technology
             </div>
             <div className="space-y-6">
-              <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter text-foreground uppercase leading-[0.9]">
+              <h1 className="text-6xl md:text-8xl lg:text-9xl font-extrabold tracking-tight text-foreground leading-[0.9]">
                 Master the <br /><span className="text-primary drop-shadow-[0_0_25px_rgba(220,38,38,0.5)]">Octagon.</span>
               </h1>
-              <p className="mx-auto max-w-[800px] text-muted-foreground md:text-xl lg:text-2xl font-medium uppercase tracking-wide leading-relaxed">
+              <p className="mx-auto max-w-[800px] text-muted-foreground md:text-xl lg:text-2xl font-medium tracking-wide leading-relaxed">
                 The ultimate AI-powered knowledge base for Mixed Martial Arts. Analyze fights, generate dynamic quizzes, and evaluate AI accuracy in real-time.
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mt-12">
               <Link href="/chat">
-                <Button size="lg" className="w-full sm:w-auto h-16 px-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest rounded-none text-xl transition-all hover:-translate-y-1">
+                <Button size="lg" className="w-full sm:w-auto h-16 px-14 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-none text-xl transition-all hover:-translate-y-1">
                   Start Chat
                 </Button>
               </Link>
               <Link href="/quiz">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto h-16 px-14 border-2 border-foreground text-foreground hover:bg-foreground hover:text-background font-black uppercase tracking-widest rounded-none text-xl transition-all hover:-translate-y-1 bg-background/50 backdrop-blur-sm">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto h-16 px-14 border-2 border-foreground text-foreground hover:bg-foreground hover:text-background font-bold rounded-none text-xl transition-all hover:-translate-y-1 bg-background/50 backdrop-blur-sm">
                   Take a Quiz
                 </Button>
               </Link>
@@ -52,7 +52,7 @@ export default function Home() {
       <section className="w-full py-24 md:py-32 bg-muted/30 relative">
         <div className="container px-4 md:px-6 mx-auto">
           <div className="text-center mb-16 space-y-4">
-            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-foreground">Platform Capabilities</h2>
+            <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">Platform Capabilities</h2>
             <p className="text-muted-foreground font-medium text-lg max-w-2xl mx-auto">Built from the ground up to provide accurate, transparent, and engaging MMA knowledge.</p>
           </div>
 
@@ -93,7 +93,7 @@ export default function Home() {
                 <div className="h-14 w-14 bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors rounded-sm">
                   {feature.icon}
                 </div>
-                <h3 className="text-2xl font-black uppercase text-foreground tracking-tight">{feature.title}</h3>
+                <h3 className="text-2xl font-bold text-foreground tracking-tight">{feature.title}</h3>
                 <p className="text-muted-foreground font-medium leading-relaxed">
                   {feature.desc}
                 </p>
@@ -107,7 +107,7 @@ export default function Home() {
       <section className="w-full py-24 md:py-32 bg-background border-t border-border">
         <div className="container px-4 md:px-6 mx-auto max-w-4xl">
           <div className="text-center mb-16 space-y-4">
-            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-foreground">Technical FAQ</h2>
+            <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">Technical FAQ</h2>
             <p className="text-muted-foreground font-medium text-lg">How FightIQ actually works under the hood.</p>
           </div>
 
@@ -143,11 +143,11 @@ export default function Home() {
       {/* Final CTA */}
       <section className="relative w-full py-32 bg-card border-t border-border overflow-hidden">
         <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
-        <div className="container px-4 md:px-6 relative z-10 text-center">
-          <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-foreground mb-6">Ready to test your <span className="text-primary">FightIQ?</span></h2>
-          <p className="text-xl text-muted-foreground font-medium mb-10 max-w-2xl mx-auto">Join the platform and see if you have what it takes to outsmart the AI.</p>
-          <Link href="/login">
-            <Button size="lg" className="h-16 px-16 bg-foreground hover:bg-muted-foreground text-background font-black uppercase tracking-widest rounded-none text-xl transition-all hover:-translate-y-1 shadow-sm">
+        <div className="container px-4 md:px-6 relative z-10 mx-auto flex flex-col items-center justify-center text-center">
+          <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight text-foreground mb-6">Ready to test your <span className="text-primary">FightIQ?</span></h2>
+          <p className="text-xl text-muted-foreground font-medium mb-10 max-w-2xl text-center">Join the platform and see if you have what it takes to outsmart the AI.</p>
+          <Link href="/signup" className="flex justify-center w-full sm:w-auto">
+            <Button size="lg" className="h-16 px-16 bg-foreground hover:bg-muted-foreground text-background font-bold rounded-none text-xl transition-all hover:-translate-y-1 shadow-sm">
               Create an Account
             </Button>
           </Link>
@@ -158,13 +158,36 @@ export default function Home() {
       <footer className="w-full py-12 border-t border-border bg-background">
         <div className="container px-4 md:px-6 mx-auto flex flex-col md:flex-row items-center justify-between">
           <div className="flex items-center space-x-2 mb-4 md:mb-0">
-            <span className="font-black text-xl tracking-tighter text-foreground uppercase">
+            <span className="font-extrabold text-xl tracking-tight text-foreground">
               Fight<span className="text-primary">IQ</span>
             </span>
           </div>
-          <p className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
-            Built with Next.js, FastAPI, and Google Gemini
-          </p>
+          
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <span className="text-xs text-muted-foreground font-bold">Powered By</span>
+            <div className="flex items-center space-x-6 opacity-70 grayscale hover:grayscale-0 transition-all duration-300">
+              {/* Next.js */}
+              <div className="flex items-center space-x-2" title="Next.js">
+                <img src="https://cdn.simpleicons.org/nextdotjs/black" className="h-5 w-5 dark:invert" alt="Next.js Logo" />
+                <span className="font-semibold text-sm">Next.js</span>
+              </div>
+              {/* FastAPI */}
+              <div className="flex items-center space-x-2" title="FastAPI">
+                <img src="https://cdn.simpleicons.org/fastapi/009688" className="h-6 w-auto" alt="FastAPI Logo" />
+                <span className="font-semibold text-sm">FastAPI</span>
+              </div>
+              {/* Gemini */}
+              <div className="flex items-center space-x-2" title="Google Gemini">
+                <img src="https://cdn.simpleicons.org/googlegemini/8E75B2" className="h-5 w-auto" alt="Gemini Logo" />
+                <span className="font-semibold text-sm">Gemini</span>
+              </div>
+              {/* Groq */}
+              <div className="flex items-center space-x-2" title="Groq">
+                <Cpu className="h-5 w-5 text-[#F36633]" />
+                <span className="font-semibold text-sm">Groq</span>
+              </div>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

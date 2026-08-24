@@ -10,8 +10,8 @@ from pydantic import ConfigDict
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
-from app.utils.embedder import Embedder
 from app.repositories.chunk_repository import ChunkRepository
+from app.utils.embedder import Embedder
 
 log = get_logger(__name__)
 

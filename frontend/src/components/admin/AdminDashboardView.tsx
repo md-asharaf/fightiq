@@ -11,24 +11,33 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export function AdminDashboardView() {
-  const { documents, loading, uploading, seeding, loadDocuments, seedData, uploadDoc, deleteDoc } = useAdmin();
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  
+  const { documents, totalDocuments, isLoading, isFetching, uploading, seeding, loadDocuments, seedData, uploadDoc, deleteDoc } = useAdmin(page, pageSize);
   const [file, setFile] = useState<File | null>(null);
   const [category, setCategory] = useState("fighters");
   const [url, setUrl] = useState("");
   const [scrapeStatus, setScrapeStatus] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const totalPages = Math.ceil(totalDocuments / pageSize) || 1;
 
   useEffect(() => {
     loadDocuments();
-  }, [loadDocuments]);
+  }, [loadDocuments, page]);
 
   const handleSeed = async () => {
     try {
       await seedData();
       toast.success("Successfully seeded curated data!");
-    } catch {
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to seed data.");
     }
   };
 
@@ -40,8 +49,8 @@ export function AdminDashboardView() {
       await uploadDoc(file, category);
       toast.success("Document uploaded successfully!");
       setFile(null);
-    } catch {
-      // Errors are handled by the API wrapper
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload document.");
     }
   };
 
@@ -112,15 +121,15 @@ export function AdminDashboardView() {
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Upload Card */}
-        <Card className="bg-card border-border shadow-xl rounded-none">
+        <Card className="bg-card border-border shadow-sm rounded-none">
           <CardHeader className="border-b border-border bg-muted/30">
-            <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter text-foreground"><Upload className="h-5 w-5 text-primary" /> Upload Document</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tighter text-foreground"><Upload className="h-5 w-5 text-primary" /> Upload Document</CardTitle>
             <CardDescription className="text-muted-foreground font-medium">Upload a local Markdown, PDF, or text file.</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <form onSubmit={handleUpload} className="space-y-6">
               <div className="space-y-3">
-                <Label htmlFor="category" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Category</Label>
+                <Label htmlFor="category" className="text-xs font-bold text-muted-foreground">Category</Label>
                 <Select value={category} onValueChange={(val) => setCategory(val || "fighters")}>
                   <SelectTrigger id="category" className="bg-background border-border text-foreground h-12 rounded-none focus:ring-primary">
                     <SelectValue placeholder="Select a category" />
@@ -134,10 +143,10 @@ export function AdminDashboardView() {
                 </Select>
               </div>
               <div className="space-y-3">
-                <Label htmlFor="file" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">File</Label>
-                <Input id="file" type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} required className="bg-background border-border text-foreground h-12 focus-visible:ring-primary rounded-none file:text-primary file:font-bold file:uppercase file:tracking-widest" />
+                <Label htmlFor="file" className="text-xs font-bold text-muted-foreground">File</Label>
+                <Input id="file" type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} required className="bg-background border-border text-foreground h-12 focus-visible:ring-primary rounded-none file:text-primary file:font-bold file: file:" />
               </div>
-              <Button type="submit" disabled={!file || uploading} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 font-bold uppercase tracking-wider rounded-none">
+              <Button type="submit" disabled={!file || uploading} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 font-bold rounded-none">
                 {uploading ? "Uploading..." : "Upload & Process"}
               </Button>
             </form>
@@ -145,15 +154,15 @@ export function AdminDashboardView() {
         </Card>
 
         {/* Scrape Card */}
-        <Card className="bg-card border-border shadow-xl rounded-none">
+        <Card className="bg-card border-border shadow-sm rounded-none">
           <CardHeader className="border-b border-border bg-muted/30">
-            <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter text-foreground"><Globe className="h-5 w-5 text-primary" /> Web Scraper</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tighter text-foreground"><Globe className="h-5 w-5 text-primary" /> Web Scraper</CardTitle>
             <CardDescription className="text-muted-foreground font-medium">Scrape knowledge from Wikipedia, ufc.com, or ufcstats.com.</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <form onSubmit={handleScrape} className="space-y-6">
               <div className="space-y-3">
-                <Label htmlFor="scrapeCategory" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Category</Label>
+                <Label htmlFor="scrapeCategory" className="text-xs font-bold text-muted-foreground">Category</Label>
                 <Select value={category} onValueChange={(val) => setCategory(val || "fighters")}>
                   <SelectTrigger id="scrapeCategory" className="bg-background border-border text-foreground h-12 rounded-none focus:ring-primary">
                     <SelectValue placeholder="Select a category" />
@@ -167,19 +176,19 @@ export function AdminDashboardView() {
                 </Select>
               </div>
               <div className="space-y-3">
-                <Label htmlFor="url" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">URL / Topic</Label>
+                <Label htmlFor="url" className="text-xs font-bold text-muted-foreground">URL / Topic</Label>
                 <Input id="url" placeholder="https://ufcstats.com/... or Topic Name" value={url} onChange={(e) => setUrl(e.target.value)} required className="bg-background border-border text-foreground h-12 focus-visible:ring-primary rounded-none placeholder:text-muted-foreground" />
               </div>
 
               {scrapeStatus ? (
                 <div className="p-4 bg-muted/30 border border-border space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Status</span>
-                    <span className="text-xs font-bold uppercase tracking-widest text-primary animate-pulse">{scrapeStatus}</span>
+                    <span className="text-xs font-bold text-muted-foreground">Status</span>
+                    <span className="text-xs font-bold text-primary animate-pulse">{scrapeStatus}</span>
                   </div>
                 </div>
               ) : (
-                <Button type="submit" disabled={!url} className="w-full bg-foreground text-background hover:bg-muted-foreground h-12 font-bold uppercase tracking-wider rounded-none">Scrape & Process</Button>
+                <Button type="submit" disabled={!url} className="w-full bg-foreground text-background hover:bg-muted-foreground h-12 font-bold rounded-none">Scrape & Process</Button>
               )}
             </form>
           </CardContent>
@@ -192,8 +201,8 @@ export function AdminDashboardView() {
             <CardTitle>Ingested Documents</CardTitle>
             <CardDescription>Vectorized chunks ready for RAG and Quiz generation.</CardDescription>
           </div>
-          <Button variant="outline" size="icon" onClick={() => loadDocuments()} disabled={loading}>
-            <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <Button variant="outline" size="icon" onClick={() => loadDocuments()} disabled={isFetching}>
+            <RefreshCcw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
           </Button>
         </CardHeader>
         <CardContent>
@@ -209,10 +218,24 @@ export function AdminDashboardView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {documents.length === 0 ? (
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={`skeleton-${i}`}>
+                      <TableCell><Skeleton className="h-4 w-48 rounded" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20 rounded" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-32 rounded" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24 rounded" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-8 rounded-full" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : documents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                      No documents ingested yet. Seed or upload some data!
+                    <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                      <div className="flex flex-col items-center justify-center space-y-3">
+                        <Database className="h-10 w-10 text-muted-foreground/30" />
+                        <p className="font-medium text-base">No documents ingested yet.</p>
+                        <p className="text-sm">Seed or upload some data to get started!</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -227,13 +250,18 @@ export function AdminDashboardView() {
                       </TableCell>
                       <TableCell>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" onClick={async () => {
+                        <Button variant="ghost" size="icon" disabled={deletingId === doc.id} onClick={async () => {
                           try {
+                            setDeletingId(doc.id);
                             await deleteDoc(doc.id);
                             toast.success("Document deleted!");
-                          } catch { }
+                          } catch (err: unknown) {
+                            toast.error(err instanceof Error ? err.message : "Failed to delete document.");
+                          } finally {
+                            setDeletingId(null);
+                          }
                         }} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
-                          <Trash2 className="h-4 w-4" />
+                          {deletingId === doc.id ? <RefreshCcw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -241,6 +269,34 @@ export function AdminDashboardView() {
                 )}
               </TableBody>
             </Table>
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/20">
+                <div className="text-sm text-muted-foreground">
+                  Showing page <span className="font-medium text-foreground">{page}</span> of <span className="font-medium text-foreground">{totalPages}</span> ({totalDocuments} total documents)
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1 || isFetching}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages || isFetching}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

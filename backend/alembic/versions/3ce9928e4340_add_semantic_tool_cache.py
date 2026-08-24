@@ -5,18 +5,18 @@ Revises: 8df8b13ee7fb
 Create Date: 2026-08-23 17:55:37.437307
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
+
+import pgvector
+import sqlalchemy as sa
 
 from alembic import op
-import sqlalchemy as sa
-import pgvector
-
 
 # revision identifiers, used by Alembic.
 revision: str = '3ce9928e4340'
-down_revision: Union[str, Sequence[str], None] = '8df8b13ee7fb'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = '8df8b13ee7fb'
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

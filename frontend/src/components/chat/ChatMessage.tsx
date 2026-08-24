@@ -3,9 +3,10 @@
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { User, Swords, ExternalLink, FileText } from "lucide-react";
+import { ExternalLink, FileText } from "lucide-react";
 import { ChatSource } from "@/types";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useSession } from "@/lib/auth-client";
 
 export interface MessageProps {
   role: "user" | "assistant";
@@ -14,7 +15,10 @@ export interface MessageProps {
 }
 
 export function ChatMessage({ role, content, sources }: MessageProps) {
+  const { data: session } = useSession();
   const isUser = role === "user";
+  const userName = session?.user?.name || "User";
+  const initials = userName.substring(0, 2).toUpperCase();
 
   return (
     <motion.div
@@ -25,16 +29,17 @@ export function ChatMessage({ role, content, sources }: MessageProps) {
     >
       <div className="flex w-full max-w-3xl space-x-6 px-4">
         {/* Avatar */}
-        <div className="shrink-0 flex flex-col items-center">
-          <Avatar className="w-8 h-8 rounded-md shadow-sm">
+        <div className="shrink-0 flex flex-col items-center mt-1">
+          <Avatar className="w-8 h-8 shadow-sm overflow-visible">
             {isUser ? (
-              <AvatarFallback className="bg-muted text-muted-foreground rounded-md">
-                <User className="w-5 h-5" />
-              </AvatarFallback>
+              <>
+                <AvatarImage src={session?.user?.image || ""} alt={userName} />
+                <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-xs rounded-md w-8 h-8 flex items-center justify-center">
+                  {initials}
+                </AvatarFallback>
+              </>
             ) : (
-              <AvatarFallback className="bg-primary text-primary-foreground rounded-md">
-                <Swords className="w-5 h-5" />
-              </AvatarFallback>
+              <img src="/favicon.ico" alt="FightIQ Logo" className="h-8 w-auto object-contain" />
             )}
           </Avatar>
         </div>
@@ -48,7 +53,7 @@ export function ChatMessage({ role, content, sources }: MessageProps) {
           {/* Source Citations */}
           {!isUser && sources && sources.length > 0 && (
             <div className="mt-8 pt-6 border-t border-border">
-              <p className="text-[11px] font-bold tracking-[0.2em] uppercase mb-4 text-muted-foreground">Sources</p>
+              <p className="text-[11px] font-bold tracking-[0.2em] mb-4 text-muted-foreground">Sources</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {sources.map((s, idx) => {
                   const isLink = s.source && s.source.startsWith("http");
@@ -65,7 +70,7 @@ export function ChatMessage({ role, content, sources }: MessageProps) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate transition-colors">{s.title}</p>
-                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1 truncate">{s.category}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1 truncate">{s.category}</p>
                       </div>
                     </a>
                   );

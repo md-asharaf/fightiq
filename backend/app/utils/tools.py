@@ -1,17 +1,12 @@
 import asyncio
-import datetime
-import uuid
 
-from langchain_exa import ExaSearchRetriever
 from langchain_core.language_models import BaseChatModel
-from sqlalchemy.ext.asyncio import AsyncSession
+from langchain_exa import ExaSearchRetriever
 
-from app.repositories.tool_cache_repository import ToolCacheRepository
-from app.repositories.knowledge_graph_repository import KnowledgeGraphRepository
-
-from app.db.models import SemanticToolCache
-from app.utils.embedder import Embedder
 from app.core.logging import get_logger
+from app.repositories.knowledge_graph_repository import KnowledgeGraphRepository
+from app.repositories.tool_cache_repository import ToolCacheRepository
+from app.utils.embedder import Embedder
 
 log = get_logger(__name__)
 
@@ -57,10 +52,10 @@ class ExaSearchProvider:
             use_autoprompt=True,
             num_results=num_results,
         )
-        
+
         # ExaSearchRetriever supports ainvoke
         docs = await retriever.ainvoke(query)
-        
+
         payload = "\n\n".join(f"Title: {d.metadata.get('title')}\nSource: {d.metadata.get('url')}\nContent: {d.page_content}" for d in docs)
 
         # 3. Store in cache

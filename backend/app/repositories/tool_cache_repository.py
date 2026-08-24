@@ -1,11 +1,11 @@
 import datetime
-import uuid
-from typing import Sequence
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import SemanticToolCache
 from app.repositories.base_repository import BaseRepository
+
 
 class ToolCacheRepository(BaseRepository[SemanticToolCache]):
     def __init__(self, session: AsyncSession):
@@ -15,8 +15,8 @@ class ToolCacheRepository(BaseRepository[SemanticToolCache]):
         self, query_embedding: list[float], tool_name: str, distance_threshold: float, hours: int
     ) -> str | None:
         """Find a cached response using semantic similarity."""
-        cutoff_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=hours)
-        
+        cutoff_time = datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=hours)
+
         # Use pgvector's <=> operator for cosine distance
         stmt = (
             select(SemanticToolCache)
@@ -28,10 +28,10 @@ class ToolCacheRepository(BaseRepository[SemanticToolCache]):
             .order_by(SemanticToolCache.query_embedding.cosine_distance(query_embedding))
             .limit(1)
         )
-        
+
         result = await self.session.execute(stmt)
         cache_entry = result.scalar_one_or_none()
-        
+
         if cache_entry:
             return cache_entry.result_payload
         return None

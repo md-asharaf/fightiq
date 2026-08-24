@@ -1,6 +1,7 @@
 from app.db.models import QuizResult, QuizSession
 from app.schemas.quiz import QuestionResult, QuizSubmitRequest, QuizSubmitResponse
 
+
 def evaluate_quiz(
     quiz_session: QuizSession,
     submit_request: QuizSubmitRequest,

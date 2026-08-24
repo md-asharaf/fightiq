@@ -1,6 +1,5 @@
 import datetime
 import logging
-from typing import Any
 
 from langchain_core.language_models import BaseChatModel
 from pydantic import BaseModel, Field
@@ -57,10 +56,10 @@ class KnowledgeExtractor:
         """Runs the extraction in the background and upserts into PostgreSQL."""
         try:
             log.info(f"Starting background extraction for query: {query}")
-            
+
             # 1. Structure the LLM
             structured_llm = self.llm.with_structured_output(KnowledgeExtractionResult)
-            
+
             prompt = (
                 f"Extract structured facts about UFC/MMA fighters and events from the following text.\n"
                 f"Query that generated this text: {query}\n\n"
@@ -68,21 +67,21 @@ class KnowledgeExtractor:
                 "If there are no concrete, objective facts about fighters or events, return empty lists. "
                 "Do not extract opinions or unverified rumors."
             )
-            
+
             result: KnowledgeExtractionResult = await structured_llm.ainvoke(prompt)
-            
+
             # 2. Upsert Fighters
             if result.fighters:
                 for fighter in result.fighters:
                     await self.repo.upsert_fighter(fighter.model_dump())
-            
+
             # 3. Upsert Events
             if result.events:
                 for event in result.events:
                     data = event.model_dump()
                     if data.get("date"):
                         try:
-                            data["date"] = datetime.datetime.strptime(data["date"], "%Y-%m-%d").replace(tzinfo=datetime.timezone.utc)
+                            data["date"] = datetime.datetime.strptime(data["date"], "%Y-%m-%d").replace(tzinfo=datetime.UTC)
                         except ValueError:
                             data["date"] = None
                     await self.repo.upsert_event(data)
@@ -92,7 +91,7 @@ class KnowledgeExtractor:
                 log.info(f"Successfully upserted {len(result.fighters)} fighters and {len(result.events)} events.")
             else:
                 log.info("No facts extracted.")
-                
+
         except Exception as e:
             log.error(f"Error in background knowledge extraction: {e}")
             await self.repo.rollback()

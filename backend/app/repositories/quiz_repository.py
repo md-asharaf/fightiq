@@ -3,6 +3,7 @@ from collections.abc import Sequence
 
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.db.models import QuizResult, QuizSession
 from app.repositories.base_repository import BaseRepository
@@ -23,10 +24,12 @@ class QuizRepository(BaseRepository[QuizSession]):
         return self.add(quiz_session)
 
     async def get_session(self, session_id: uuid.UUID) -> QuizSession | None:
-        return await self.get_by_id(session_id)
+        stmt = select(QuizSession).options(selectinload(QuizSession.results)).where(QuizSession.id == session_id)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def get_sessions(self, skip: int = 0, limit: int = 20) -> Sequence[QuizSession]:
-        stmt = select(QuizSession).order_by(desc(QuizSession.created_at)).offset(skip).limit(limit)
+        stmt = select(QuizSession).options(selectinload(QuizSession.results)).order_by(desc(QuizSession.created_at)).offset(skip).limit(limit)
         result = await self.session.execute(stmt)
         return result.scalars().all()
 

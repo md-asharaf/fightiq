@@ -1,9 +1,8 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import { Send, Trash2, StopCircle, Swords } from "lucide-react";
+import { Send, StopCircle } from "lucide-react";
 import { ChatMessage } from "@/components/chat/ChatMessage";
-import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useChat } from "@/hooks/useChat";
@@ -14,13 +13,9 @@ export function ChatView() {
     input,
     setInput,
     isLoading,
-    sessionId,
-    sessions,
-    loadingSessions,
-    handleClear,
+    sessionLoading,
     handleSend,
     handleStop,
-    loadSession
   } = useChat();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -54,48 +49,22 @@ export function ChatView() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-background">
-      <div className="hidden md:block">
-        <ChatSidebar 
-          sessions={sessions} 
-          loading={loadingSessions} 
-          activeSessionId={sessionId} 
-          onSelect={loadSession} 
-          onNew={handleClear} 
-        />
-      </div>
-      <div className="flex-1 flex flex-col relative min-w-0">
-        {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-6 py-4 flex justify-between items-center shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-          </div>
-          <h1 className="text-xl font-black tracking-tighter text-foreground uppercase drop-shadow-md">
-            FightIQ Chat
-          </h1>
-        </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleClear} 
-          title="Clear Chat" 
-          className="text-muted-foreground border-border bg-accent/50 hover:text-destructive hover:bg-destructive/10 hover:border-destructive transition-all flex items-center gap-2 rounded-full px-4"
-        >
-          <Trash2 className="h-4 w-4" />
-          <span className="text-xs font-semibold uppercase tracking-wider hidden sm:inline">Clear Session</span>
-        </Button>
-      </div>
-
+    <div className="flex-1 flex flex-col relative h-full w-full bg-background">
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto pb-40 px-4 md:px-0">
         <div className="flex flex-col w-full max-w-3xl mx-auto pt-8">
-          {messages.length === 0 && (
+          {(isLoading || sessionLoading) && messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center mt-32 space-y-4">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin opacity-80"></div>
+              <p className="text-sm font-semibold text-muted-foreground animate-pulse">Loading conversation...</p>
+            </div>
+          )}
+
+          {messages.length === 0 && !isLoading && !sessionLoading && (
             <div className="flex flex-col items-center justify-center mt-20 space-y-8">
               <div className="flex flex-col items-center text-center space-y-4 opacity-80">
-                <div className="w-16 h-16 rounded-2xl bg-accent border border-border flex items-center justify-center mb-2 shadow-sm">
-                  <Swords className="w-8 h-8 text-primary" />
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2">
+                  <img src="/favicon.ico" alt="FightIQ Logo" className="h-10 w-auto object-contain" />
                 </div>
                 <h2 className="text-xl font-bold text-foreground tracking-tight">How can I help you?</h2>
                 <p className="text-sm text-muted-foreground">Ask me about UFC history, fighter stats, or unified rules.</p>
@@ -119,16 +88,21 @@ export function ChatView() {
               </div>
             </div>
           )}
-          {messages.map((msg, idx) => (
-            <ChatMessage key={idx} {...msg} />
-          ))}
-          {isLoading && messages[messages.length - 1]?.role === "user" && (
-            <div className="w-full py-6 flex">
-              <div className="flex w-full space-x-6">
-                <div className="shrink-0 w-8 h-8 rounded-md bg-primary flex items-center justify-center shadow-sm">
-                  <div className="w-2 h-2 rounded-full bg-primary-foreground animate-ping" />
+          {messages.map((msg, idx) => {
+            if (isLoading && idx === messages.length - 1 && msg.role === "assistant" && !msg.content) {
+              return null;
+            }
+            return <ChatMessage key={idx} {...msg} />;
+          })}
+          {isLoading && messages[messages.length - 1]?.role === "assistant" && !messages[messages.length - 1]?.content && (
+            <div className="w-full py-8 flex justify-center border-b border-border bg-card">
+              <div className="flex w-full max-w-3xl space-x-6 px-4">
+                <div className="shrink-0 flex flex-col items-center mt-1">
+                  <div className="w-8 h-8 shadow-sm overflow-visible relative flex items-center justify-center rounded-full">
+                    <img src="/favicon.ico" alt="FightIQ Logo" className="h-8 w-auto object-contain animate-pulse" />
+                  </div>
                 </div>
-                <div className="flex items-center text-sm font-medium text-muted-foreground">
+                <div className="flex items-center text-sm font-medium text-muted-foreground pt-1">
                   Thinking...
                 </div>
               </div>
@@ -143,7 +117,7 @@ export function ChatView() {
         <div className="max-w-3xl mx-auto">
           <form
             onSubmit={handleSend}
-            className="relative flex items-end shadow-xl rounded-2xl border border-border bg-card overflow-hidden focus-within:ring-1 focus-within:ring-primary/50 transition-all"
+            className="relative flex items-end shadow rounded-full border border-border bg-card overflow-hidden focus-within:ring-1 focus-within:ring-primary/50 transition-all"
           >
             <Textarea
               ref={textareaRef}
@@ -180,10 +154,9 @@ export function ChatView() {
               )}
             </div>
           </form>
-          <div className="text-center mt-4 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase opacity-70">
+          <div className="text-center mt-4 text-[12px] font-semibold text-muted-foreground opacity-70">
             FightIQ can make mistakes. Verify important information.
           </div>
-        </div>
         </div>
       </div>
     </div>

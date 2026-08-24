@@ -40,14 +40,14 @@ export function AdminLoginView() {
       <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
       <div className="absolute top-0 w-full h-1 bg-primary" />
       
-      <Card className="w-full max-w-md bg-card border-border shadow-2xl rounded-none relative z-10 border-t-4 border-t-primary">
+      <Card className="w-full max-w-md bg-card border-border shadow-sm rounded-none relative z-10 border-t-4 border-t-primary">
         <CardHeader className="space-y-1 border-b border-border bg-muted/30">
           <div className="flex justify-center mb-4">
             <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
               <ShieldAlert className="h-6 w-6 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-black uppercase tracking-tighter text-foreground text-center">
+          <CardTitle className="text-2xl font-bold tracking-tighter text-foreground text-center">
             Restricted Area
           </CardTitle>
           <CardDescription className="text-muted-foreground font-medium text-center">
@@ -57,7 +57,7 @@ export function AdminLoginView() {
         <CardContent className="pt-6 space-y-4">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Admin Email</Label>
+              <Label htmlFor="email" className="text-xs font-bold text-muted-foreground">Admin Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -69,7 +69,7 @@ export function AdminLoginView() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Password</Label>
+              <Label htmlFor="password" className="text-xs font-bold text-muted-foreground">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -82,7 +82,7 @@ export function AdminLoginView() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 font-bold uppercase tracking-wider rounded-none"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 font-bold rounded-none"
             >
               {loading ? "Authenticating..." : "Sign In to Admin"}
             </Button>

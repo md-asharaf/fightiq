@@ -61,6 +61,7 @@ class QuizSessionRead(BaseModel):
     num_questions: int
     questions: list[dict[str, Any]]
     created_at: datetime
+    status: str = "active"
 
     @model_validator(mode="before")
     @classmethod
@@ -83,6 +84,10 @@ class QuizSessionRead(BaseModel):
                     safe_q.pop("correct_option_id", None)
                     safe_q.pop("explanation", None)
                 sanitized_questions.append(safe_q)
+            try:
+                status = "completed" if getattr(data, "results", None) else "active"
+            except Exception:
+                status = "active"
             return {
                 "id": data.id,
                 "topic": data.topic,
@@ -90,6 +95,7 @@ class QuizSessionRead(BaseModel):
                 "num_questions": data.num_questions,
                 "questions": sanitized_questions,
                 "created_at": data.created_at,
+                "status": status,
             }
         return data
 

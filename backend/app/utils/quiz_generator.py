@@ -1,5 +1,6 @@
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
+
 from app.schemas.quiz import QuizGeneratedData
 
 QUIZ_SYSTEM_PROMPT = """You are FightIQ, an expert MMA quiz generator.

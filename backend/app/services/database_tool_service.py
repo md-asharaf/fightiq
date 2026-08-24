@@ -1,6 +1,7 @@
+import logging
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-import logging
 
 log = logging.getLogger(__name__)
 
@@ -14,13 +15,13 @@ class DatabaseToolService:
         if not query.strip().upper().startswith("SELECT"):
             log.warning(f"Rejected non-SELECT query: {query}")
             return "Error: Only SELECT queries are permitted for safety reasons."
-            
+
         try:
             result = await self.db.execute(text(query))
             rows = result.fetchall()
             if not rows:
                 return "Query returned no results."
-            
+
             columns = result.keys()
             output = [", ".join(columns)]
             for row in rows:

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ResourceNotFoundError, ValidationError
 from app.core.interfaces import IDocumentRepository
 from app.core.logging import get_logger
+from app.repositories.chunk_repository import ChunkRepository
 from app.schemas.chunk import (
     SimilaritySearchRequest,
     SimilaritySearchResponse,
@@ -12,7 +13,6 @@ from app.schemas.chunk import (
 )
 from app.schemas.document import DocumentListResponse, DocumentRead
 from app.utils.embedder import Embedder
-from app.repositories.chunk_repository import ChunkRepository
 
 log = get_logger(__name__)
 
@@ -59,7 +59,7 @@ class DocumentService:
 
         query_embedding = await self.embedder.aembed_query(request.query)
         chunk_repo = ChunkRepository(session=self.db)
-        
+
         results = await chunk_repo.similarity_search_with_scores(
             query_embedding=query_embedding,
             k=request.k,

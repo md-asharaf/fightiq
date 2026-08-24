@@ -5,6 +5,7 @@ from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
     Float,
@@ -12,7 +13,6 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    JSON,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID

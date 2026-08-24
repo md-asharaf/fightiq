@@ -5,7 +5,7 @@ import { QuizSession, QuizResult } from "@/types";
 export function useQuizList() {
   const queryClient = useQueryClient();
 
-  const { data: sessions = [] } = useQuery<QuizSession[]>({
+  const { data: sessions = [], isLoading } = useQuery<QuizSession[]>({
     queryKey: ["quiz-sessions"],
     queryFn: () => fetchApi("/quiz/sessions"),
   });
@@ -25,6 +25,7 @@ export function useQuizList() {
 
   return {
     sessions,
+    loadingSessions: isLoading,
     loadSessions: () => queryClient.invalidateQueries({ queryKey: ["quiz-sessions"] }),
     generateQuiz: (topic: string, difficulty: string) => generateMutation.mutateAsync({ topic, difficulty }),
   };

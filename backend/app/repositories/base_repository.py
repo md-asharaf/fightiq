@@ -22,6 +22,6 @@ class BaseRepository[ModelType: Base]:
 
     async def commit(self) -> None:
         await self.session.commit()
-        
+
     async def rollback(self) -> None:
         await self.session.rollback()

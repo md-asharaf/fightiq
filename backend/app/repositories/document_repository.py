@@ -14,13 +14,13 @@ class DocumentRepository(BaseRepository[Document]):
 
     async def get_document(self, document_id: uuid.UUID) -> Document | None:
         return await self.get_by_id(document_id)
-        
+
     async def document_exists(self, source: str) -> bool:
         """Return True if a document with this source path is already in the DB."""
         stmt = select(Document.id).where(Document.source == source).limit(1)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none() is not None
-        
+
     async def create_document(self, doc: Document) -> Document:
         """Add a new document to the database."""
         self.session.add(doc)
