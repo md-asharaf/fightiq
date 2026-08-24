@@ -67,7 +67,7 @@ class TestDocumentRead:
             updated_at=datetime.now(UTC),
         )
         defaults.update(overrides)
-        return DocumentRead(**defaults)
+        return DocumentRead(**defaults)  # type: ignore[arg-type]
 
     def test_valid_document_read(self):
         doc = self._make_doc_read()

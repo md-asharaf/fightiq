@@ -71,4 +71,5 @@ class Settings(BaseSettings):
         return v
 
 
+# The pydantic.mypy plugin will handle kwargs.
 settings = Settings()

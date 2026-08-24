@@ -25,12 +25,12 @@ class Embedder:
             model=settings.embedding_model,
             google_api_key=settings.google_api_key,
             task_type="retrieval_document",  # optimal for document indexing
-        )
+        )  # type: ignore[call-arg]
         self._query_model = GoogleGenerativeAIEmbeddings(
             model=settings.embedding_model,
             google_api_key=settings.google_api_key,
             task_type="retrieval_query",  # optimal for query embedding
-        )
+        )  # type: ignore[call-arg]
         log.info(
             "Embedder initialised",
             model=settings.embedding_model,

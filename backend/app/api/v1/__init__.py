@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.v1.documents import router as documents_router
-from app.api.v1.ingest import router as ingest_router
+from app.api.v1 import chat, documents, ingest
 
 router = APIRouter()
 
-router.include_router(ingest_router, prefix="/ingest", tags=["Ingestion"])
-router.include_router(documents_router, prefix="/documents", tags=["Documents"])
+router.include_router(ingest.router, prefix="/ingest", tags=["Ingestion"])
+router.include_router(documents.router, prefix="/documents", tags=["Documents"])
+router.include_router(chat.router, prefix="/chat", tags=["Chat"])
