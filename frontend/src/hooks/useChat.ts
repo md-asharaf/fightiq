@@ -21,7 +21,7 @@ export function useChat() {
   const [messages, setMessages] = useState<MessageProps[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [sessionId, setSessionId] = useState(() => generateSessionId());
+  const [sessionId, setSessionId] = useState(() => urlSessionId || generateSessionId());
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const updateUrlSession = useCallback((id: string) => {
@@ -31,12 +31,11 @@ export function useChat() {
   }, [pathname, router]);
 
   const loadSession = useCallback((id: string) => {
-    setSessionId(id);
     updateUrlSession(id);
   }, [updateUrlSession]);
 
   const [prevUrlSessionId, setPrevUrlSessionId] = useState(urlSessionId);
-  const [isInitializing, setIsInitializing] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(!!urlSessionId);
 
   if (urlSessionId !== prevUrlSessionId) {
     setPrevUrlSessionId(urlSessionId);

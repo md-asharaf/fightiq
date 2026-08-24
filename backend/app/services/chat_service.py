@@ -68,9 +68,10 @@ class ChatService:
         )
 
         sources: list[Any] = []
+        search_tools = {"normal_web_search", "realtime_web_search", "deep_web_search"}
         if "intermediate_steps" in result:
             for action, observation in result["intermediate_steps"]:
-                if action.tool == "search_knowledge_base" and isinstance(observation, list):
+                if action.tool in search_tools and isinstance(observation, list):
                     sources.extend(extract_citations(observation))
 
         await self.repo.add_message(chat_session.id, "assistant", result["output"], sources)
@@ -91,12 +92,13 @@ class ChatService:
         agent_executor = self.agent_factory.create_agent(filters)
 
         try:
+            search_tools = {"normal_web_search", "realtime_web_search", "deep_web_search"}
             async for event in agent_executor.astream_events(
                 {"input": message, "chat_history": history},
                 version="v2",
             ):
                 kind = event["event"]
-                if kind == "on_tool_end" and event["name"] == "search_knowledge_base":
+                if kind == "on_tool_end" and event["name"] in search_tools:
                     docs: Any = event["data"].get("output", [])
                     if isinstance(docs, list):
                         citations = extract_citations(docs)
