@@ -2,11 +2,11 @@ from app.db.models import QuizResult, QuizSession
 from app.schemas.quiz import QuestionResult, QuizSubmitRequest, QuizSubmitResponse
 
 
-def evaluate_quiz(
+def build_quiz_submit_response(
     quiz_session: QuizSession,
-    submit_request: QuizSubmitRequest,
+    answers: dict[str, str],
 ) -> tuple[QuizResult, QuizSubmitResponse]:
-    """Evaluate a user's quiz submission against the stored quiz session."""
+    """Calculate scores and build the response based on provided answers."""
     questions = quiz_session.questions
     score = 0
     question_results = []
@@ -16,7 +16,7 @@ def evaluate_quiz(
         correct_id = q_data["correct_option_id"]
         explanation = q_data["explanation"]
 
-        selected_id = submit_request.answers.get(q_id)
+        selected_id = answers.get(q_id)
         is_correct = (selected_id == correct_id)
 
         if is_correct:
@@ -37,7 +37,7 @@ def evaluate_quiz(
 
     quiz_result_db = QuizResult(
         session_id=quiz_session.id,
-        answers=submit_request.answers,
+        answers=answers,
         score=score,
         total_questions=total,
         score_percentage=percentage,
@@ -52,3 +52,11 @@ def evaluate_quiz(
     )
 
     return quiz_result_db, response
+
+
+def evaluate_quiz(
+    quiz_session: QuizSession,
+    submit_request: QuizSubmitRequest,
+) -> tuple[QuizResult, QuizSubmitResponse]:
+    """Evaluate a user's quiz submission against the stored quiz session."""
+    return build_quiz_submit_response(quiz_session, submit_request.answers)

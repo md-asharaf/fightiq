@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
 
-from app.core.dependencies import get_quiz_service, get_current_user
+from app.core.dependencies import get_current_user, get_quiz_service
 from app.db.auth_models import User
 from app.schemas.quiz import (
     QuizGenerateRequest,

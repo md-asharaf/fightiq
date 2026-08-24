@@ -30,10 +30,10 @@ class Settings(BaseSettings):
     @property
     def get_db_config(self) -> tuple[str, dict]:
         url = self.database_url
-        
+
         # asyncpg does not support 'sslmode', it requires 'ssl'
         url = url.replace("?sslmode=require", "?ssl=require").replace("&sslmode=require", "&ssl=require")
-        
+
         connect_args = {}
         if "&options=" in url:
             base_url, options_part = url.split("&options=", 1)
