@@ -30,12 +30,22 @@ class Settings(BaseSettings):
     @property
     def get_db_config(self) -> tuple[str, dict]:
         url = self.database_url
+        
+        # asyncpg does not support 'sslmode', it requires 'ssl'
+        url = url.replace("?sslmode=require", "?ssl=require").replace("&sslmode=require", "&ssl=require")
+        
         connect_args = {}
         if "&options=" in url:
             base_url, options_part = url.split("&options=", 1)
             options_val = options_part.replace("%%3D", "=").replace("%3D", "=")
             connect_args = {"server_settings": {"options": options_val}}
             url = base_url
+        elif "?options=" in url:
+            base_url, options_part = url.split("?options=", 1)
+            options_val = options_part.replace("%%3D", "=").replace("%3D", "=")
+            connect_args = {"server_settings": {"options": options_val}}
+            url = base_url
+
         return url, connect_args
 
     google_api_key: str
