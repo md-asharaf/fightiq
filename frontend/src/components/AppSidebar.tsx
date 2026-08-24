@@ -58,7 +58,7 @@ export function AppSidebar() {
     router.push("/chat");
   };
 
-  const deleteMutation = useMutation({
+  const { mutate: deleteSessionMutate, isPending: isDeleting } = useMutation({
     mutationFn: deleteSession,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chat_sessions"] });
@@ -75,7 +75,7 @@ export function AppSidebar() {
 
   const confirmDelete = () => {
     if (sessionToDelete) {
-      deleteMutation.mutate(sessionToDelete);
+      deleteSessionMutate(sessionToDelete);
     }
   };
 
@@ -159,13 +159,13 @@ export function AppSidebar() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => { e.preventDefault(); confirmDelete(); }}
-              disabled={deleteMutation.isPending}
+              disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

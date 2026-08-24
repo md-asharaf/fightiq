@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Upload, Database, Globe, RefreshCcw, Trash2 } from "lucide-react";
 import { useAdmin } from "@/hooks/useAdmin";
 import { toast } from "sonner";
@@ -28,9 +28,7 @@ export function AdminDashboardView() {
 
   const totalPages = Math.ceil(totalDocuments / pageSize) || 1;
 
-  useEffect(() => {
-    loadDocuments();
-  }, [loadDocuments, page]);
+
 
   const handleSeed = async () => {
     try {

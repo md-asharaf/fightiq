@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi } from "@/lib/api";
 import { QuizSession, QuizResult } from "@/types";
+import { useCallback } from "react";
 
 export function useQuizList() {
   const queryClient = useQueryClient();
@@ -10,7 +11,7 @@ export function useQuizList() {
     queryFn: () => fetchApi("/quiz/sessions"),
   });
 
-  const generateMutation = useMutation({
+  const { mutateAsync: generateMutateAsync } = useMutation({
     mutationFn: async ({ topic, difficulty }: { topic: string; difficulty: string }) => {
       const response = await fetchApi("/quiz/generate", {
         method: "POST",
@@ -26,8 +27,7 @@ export function useQuizList() {
   return {
     sessions,
     loadingSessions: isLoading,
-    loadSessions: () => queryClient.invalidateQueries({ queryKey: ["quiz-sessions"] }),
-    generateQuiz: (topic: string, difficulty: string) => generateMutation.mutateAsync({ topic, difficulty }),
+    generateQuiz: useCallback((topic: string, difficulty: string) => generateMutateAsync({ topic, difficulty }), [generateMutateAsync]),
   };
 }
 
@@ -46,7 +46,7 @@ export function useQuizSession(sessionId: string) {
     enabled: !!session && session.status === "completed",
   });
 
-  const submitMutation = useMutation({
+  const { mutateAsync: submitQuizMutateAsync } = useMutation({
     mutationFn: async (answers: Record<string, string>) => {
       if (!session) throw new Error("No session");
       return fetchApi(`/quiz/submit`, {
@@ -65,6 +65,6 @@ export function useQuizSession(sessionId: string) {
     result,
     loading: sessionLoading || (session?.status === "completed" && resultLoading),
     loadQuiz: refetchSession,
-    submitQuiz: submitMutation.mutateAsync,
+    submitQuiz: submitQuizMutateAsync,
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrainCircuit, Loader2 } from "lucide-react";
 import { useQuizList } from "@/hooks/useQuiz";
@@ -17,15 +17,11 @@ import { QuizSession } from "@/types";
 
 export function QuizSetupView() {
   const router = useRouter();
-  const { sessions, loadingSessions, loadSessions, generateQuiz } = useQuizList();
+  const { sessions, loadingSessions, generateQuiz } = useQuizList();
 
   const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState("intermediate");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    loadSessions();
-  }, [loadSessions]);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();

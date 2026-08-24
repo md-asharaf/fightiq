@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi } from "@/lib/api";
+import { useCallback } from "react";
 import { EvalRun } from "@/types";
 
 export function useEval() {
@@ -21,7 +22,7 @@ export function useEval() {
     results,
     loading,
     evaluating,
-    loadResults: () => queryClient.invalidateQueries({ queryKey: ["eval-results"] }),
+    loadResults: useCallback(() => queryClient.invalidateQueries({ queryKey: ["eval-results"] }), [queryClient]),
     runEvaluation
   };
 }

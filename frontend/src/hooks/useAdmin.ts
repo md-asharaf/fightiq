@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi, uploadFile } from "@/lib/api";
 import { Document } from "@/types";
 
+import { useCallback } from "react";
+
 export function useAdmin(page: number = 1, pageSize: number = 10) {
   const queryClient = useQueryClient();
 
@@ -15,19 +17,19 @@ export function useAdmin(page: number = 1, pageSize: number = 10) {
   const documents = documentsData?.items || [];
   const totalDocuments = documentsData?.total || 0;
 
-  const seedMutation = useMutation({
+  const { mutateAsync: seedMutateAsync, isPending: isSeeding } = useMutation({
     mutationFn: () => fetchApi("/ingest/seed", { method: "POST" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["documents"] }),
   });
 
-  const uploadMutation = useMutation({
+  const { mutateAsync: uploadMutateAsync, isPending: isUploading } = useMutation({
     mutationFn: ({ file, category }: { file: File; category: string }) => uploadFile("/ingest/file", file, { category }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
     },
   });
 
-  const deleteMutation = useMutation({
+  const { mutateAsync: deleteMutateAsync } = useMutation({
     mutationFn: (id: string) => fetchApi(`/documents/${id}`, { method: "DELETE" }),
     onMutate: async (deletedId) => {
       await queryClient.cancelQueries({ queryKey: ["documents"] });
@@ -47,7 +49,7 @@ export function useAdmin(page: number = 1, pageSize: number = 10) {
     },
   });
 
-  const scrapeMutation = useMutation({
+  const { mutateAsync: scrapeMutateAsync } = useMutation({
     mutationFn: ({ url, category }: { url: string; category: string }) => fetchApi("/ingest/scrape", {
       method: "POST",
       body: JSON.stringify({ url, category }),
@@ -55,17 +57,22 @@ export function useAdmin(page: number = 1, pageSize: number = 10) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["documents"] }),
   });
 
+  const seedData = useCallback(() => seedMutateAsync(), [seedMutateAsync]);
+  const uploadDoc = useCallback((file: File, category: string) => uploadMutateAsync({ file, category }), [uploadMutateAsync]);
+  const deleteDoc = useCallback((id: string) => deleteMutateAsync(id), [deleteMutateAsync]);
+  const scrapeUrl = useCallback((url: string, category: string) => scrapeMutateAsync({ url, category }), [scrapeMutateAsync]);
+
   return {
     documents,
     totalDocuments,
     isLoading,
     isFetching,
-    seeding: seedMutation.isPending,
-    uploading: uploadMutation.isPending,
+    seeding: isSeeding,
+    uploading: isUploading,
     loadDocuments,
-    seedData: () => seedMutation.mutateAsync(),
-    uploadDoc: (file: File, category: string) => uploadMutation.mutateAsync({ file, category }),
-    deleteDoc: (id: string) => deleteMutation.mutateAsync(id),
-    scrapeUrl: (url: string, category: string) => scrapeMutation.mutateAsync({ url, category }),
+    seedData,
+    uploadDoc,
+    deleteDoc,
+    scrapeUrl,
   };
 }

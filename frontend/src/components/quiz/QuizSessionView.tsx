@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuizSession } from "@/hooks/useQuiz";
 import { Loader2 } from "lucide-react";
@@ -10,12 +10,8 @@ import { QuizResultView } from "@/components/quiz/QuizResultView";
 export function QuizSessionView() {
   const params = useParams();
   const sessionId = params.sessionId as string;
-  const { session, result, loading, loadQuiz, submitQuiz } = useQuizSession(sessionId);
+  const { session, result, loading, submitQuiz } = useQuizSession(sessionId);
   const [evaluating, setEvaluating] = useState(false);
-
-  useEffect(() => {
-    loadQuiz();
-  }, [loadQuiz]);
 
   const handleSubmit = async (answers: Record<string, string>) => {
     setEvaluating(true);
@@ -42,10 +38,10 @@ export function QuizSessionView() {
   }
 
   return (
-    <QuizTakingView 
-      session={session} 
-      onSubmit={handleSubmit} 
-      evaluating={evaluating} 
+    <QuizTakingView
+      session={session}
+      onSubmit={handleSubmit}
+      evaluating={evaluating}
     />
   );
 }

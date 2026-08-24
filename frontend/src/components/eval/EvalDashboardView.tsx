@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+
 import { ShieldCheck, PlayCircle, Loader2 } from "lucide-react";
 import { useEval } from "@/hooks/useEval";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,11 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export function EvalDashboardView() {
-  const { results, loading, evaluating, loadResults, runEvaluation } = useEval();
-
-  useEffect(() => {
-    loadResults();
-  }, [loadResults]);
+  const { results, loading, evaluating, runEvaluation } = useEval();
 
   const handleRunEval = async () => {
     try {
@@ -43,9 +39,9 @@ export function EvalDashboardView() {
           <h1 className="text-3xl font-bold tracking-tight">RAG Evaluation Dashboard</h1>
           <p className="text-muted-foreground">Monitor the quality of the AI responses using Ragas metrics.</p>
         </div>
-        
+
         <AlertDialog>
-          <AlertDialogTrigger 
+          <AlertDialogTrigger
             render={<Button disabled={evaluating} className="bg-red-600 hover:bg-red-700 text-white" />}
           >
             {evaluating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
