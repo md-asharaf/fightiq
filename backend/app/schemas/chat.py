@@ -1,4 +1,5 @@
 from typing import Any
+from datetime import datetime
 
 from pydantic import BaseModel, Field
 
@@ -38,3 +39,11 @@ class ChatHistory(BaseModel):
 
     session_id: str
     messages: list[ChatMessage]
+
+
+class ChatSessionPreview(BaseModel):
+    """Preview of a chat session for the sidebar."""
+
+    session_id: str
+    created_at: datetime
+    preview_text: str

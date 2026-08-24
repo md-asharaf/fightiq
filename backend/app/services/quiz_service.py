@@ -1,8 +1,8 @@
 from langchain_core.language_models import BaseChatModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.interfaces import IQuizRepository
 from app.core.exceptions import ResourceNotFoundError
+from app.core.interfaces import IQuizRepository
 from app.schemas.quiz import QuizGenerateRequest, QuizSubmitRequest
 from app.utils.embedder import Embedder
 from app.utils.quiz_evaluator import evaluate_quiz

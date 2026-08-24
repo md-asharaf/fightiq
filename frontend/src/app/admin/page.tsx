@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Upload, Database, Globe, RefreshCcw } from "lucide-react";
+import { Upload, Database, Globe, RefreshCcw, Trash2 } from "lucide-react";
 import { useAdmin } from "@/hooks/useAdmin";
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function AdminPage() {
-  const { documents, loading, seeding, loadDocuments, seedData, uploadDoc } = useAdmin();
+  const { documents, loading, uploading, seeding, loadDocuments, seedData, uploadDoc, deleteDoc } = useAdmin();
   const [file, setFile] = useState<File | null>(null);
   const [category, setCategory] = useState("fighters");
   const [url, setUrl] = useState("");
@@ -26,9 +27,8 @@ export default function AdminPage() {
   const handleSeed = async () => {
     try {
       await seedData();
-    } catch (error: unknown) {
-      if (error instanceof Error) alert("Failed to seed: " + error.message);
-      else alert("Failed to seed: Unknown error");
+      toast.success("Successfully seeded curated data!");
+    } catch {
     }
   };
 
@@ -38,10 +38,10 @@ export default function AdminPage() {
 
     try {
       await uploadDoc(file, category);
+      toast.success("Document uploaded successfully!");
       setFile(null);
-    } catch (error: unknown) {
-      if (error instanceof Error) alert("Upload failed: " + error.message);
-      else alert("Upload failed: Unknown error");
+    } catch {
+      // Errors are handled by the API wrapper
     }
   };
 
@@ -112,72 +112,74 @@ export default function AdminPage() {
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Upload Card */}
-        <Card className="bg-black border-white/10 shadow-xl rounded-none">
-          <CardHeader className="border-b border-white/5 bg-zinc-900/30">
-            <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter text-white"><Upload className="h-5 w-5 text-red-500" /> Upload Document</CardTitle>
-            <CardDescription className="text-zinc-400 font-medium">Upload a local Markdown, PDF, or text file.</CardDescription>
+        <Card className="bg-card border-border shadow-xl rounded-none">
+          <CardHeader className="border-b border-border bg-muted/30">
+            <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter text-foreground"><Upload className="h-5 w-5 text-primary" /> Upload Document</CardTitle>
+            <CardDescription className="text-muted-foreground font-medium">Upload a local Markdown, PDF, or text file.</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <form onSubmit={handleUpload} className="space-y-6">
               <div className="space-y-3">
-                <Label htmlFor="category" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Category</Label>
+                <Label htmlFor="category" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Category</Label>
                 <Select value={category} onValueChange={(val) => setCategory(val || "fighters")}>
-                  <SelectTrigger id="category" className="bg-zinc-900 border-white/10 text-white h-12 rounded-none focus:ring-red-600">
+                  <SelectTrigger id="category" className="bg-background border-border text-foreground h-12 rounded-none focus:ring-primary">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-white/10 text-white rounded-none">
-                    <SelectItem value="fighters" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">Fighters</SelectItem>
-                    <SelectItem value="events" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">Events</SelectItem>
-                    <SelectItem value="history" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">History</SelectItem>
-                    <SelectItem value="rules" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">Rules</SelectItem>
+                  <SelectContent className="bg-background border-border text-foreground rounded-none">
+                    <SelectItem value="fighters" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer">Fighters</SelectItem>
+                    <SelectItem value="events" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer">Events</SelectItem>
+                    <SelectItem value="history" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer">History</SelectItem>
+                    <SelectItem value="rules" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer">Rules</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-3">
-                <Label htmlFor="file" className="text-xs font-bold uppercase tracking-widest text-zinc-500">File</Label>
-                <Input id="file" type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} required className="bg-zinc-900 border-white/10 text-white h-12 focus-visible:ring-red-600 rounded-none file:text-red-500 file:font-bold file:uppercase file:tracking-widest" />
+                <Label htmlFor="file" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">File</Label>
+                <Input id="file" type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} required className="bg-background border-border text-foreground h-12 focus-visible:ring-primary rounded-none file:text-primary file:font-bold file:uppercase file:tracking-widest" />
               </div>
-              <Button type="submit" disabled={!file} className="w-full bg-red-600 hover:bg-red-700 text-white h-12 font-bold uppercase tracking-wider rounded-none">Upload & Process</Button>
+              <Button type="submit" disabled={!file || uploading} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 font-bold uppercase tracking-wider rounded-none">
+                {uploading ? "Uploading..." : "Upload & Process"}
+              </Button>
             </form>
           </CardContent>
         </Card>
 
         {/* Scrape Card */}
-        <Card className="bg-black border-white/10 shadow-xl rounded-none">
-          <CardHeader className="border-b border-white/5 bg-zinc-900/30">
-            <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter text-white"><Globe className="h-5 w-5 text-red-500" /> Web Scraper</CardTitle>
-            <CardDescription className="text-zinc-400 font-medium">Scrape knowledge from Wikipedia, ufc.com, or ufcstats.com.</CardDescription>
+        <Card className="bg-card border-border shadow-xl rounded-none">
+          <CardHeader className="border-b border-border bg-muted/30">
+            <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter text-foreground"><Globe className="h-5 w-5 text-primary" /> Web Scraper</CardTitle>
+            <CardDescription className="text-muted-foreground font-medium">Scrape knowledge from Wikipedia, ufc.com, or ufcstats.com.</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <form onSubmit={handleScrape} className="space-y-6">
               <div className="space-y-3">
-                <Label htmlFor="scrapeCategory" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Category</Label>
+                <Label htmlFor="scrapeCategory" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Category</Label>
                 <Select value={category} onValueChange={(val) => setCategory(val || "fighters")}>
-                  <SelectTrigger id="scrapeCategory" className="bg-zinc-900 border-white/10 text-white h-12 rounded-none focus:ring-red-600">
+                  <SelectTrigger id="scrapeCategory" className="bg-background border-border text-foreground h-12 rounded-none focus:ring-primary">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-white/10 text-white rounded-none">
-                    <SelectItem value="fighters" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">Fighters</SelectItem>
-                    <SelectItem value="events" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">Events</SelectItem>
-                    <SelectItem value="history" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">History</SelectItem>
-                    <SelectItem value="rules" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">Rules</SelectItem>
+                  <SelectContent className="bg-background border-border text-foreground rounded-none">
+                    <SelectItem value="fighters" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer">Fighters</SelectItem>
+                    <SelectItem value="events" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer">Events</SelectItem>
+                    <SelectItem value="history" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer">History</SelectItem>
+                    <SelectItem value="rules" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer">Rules</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-3">
-                <Label htmlFor="url" className="text-xs font-bold uppercase tracking-widest text-zinc-500">URL / Topic</Label>
-                <Input id="url" placeholder="https://ufcstats.com/... or Topic Name" value={url} onChange={(e) => setUrl(e.target.value)} required className="bg-zinc-900 border-white/10 text-white h-12 focus-visible:ring-red-600 rounded-none placeholder:text-zinc-600" />
+                <Label htmlFor="url" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">URL / Topic</Label>
+                <Input id="url" placeholder="https://ufcstats.com/... or Topic Name" value={url} onChange={(e) => setUrl(e.target.value)} required className="bg-background border-border text-foreground h-12 focus-visible:ring-primary rounded-none placeholder:text-muted-foreground" />
               </div>
 
               {scrapeStatus ? (
-                <div className="p-4 bg-zinc-900 border border-white/10 space-y-2">
+                <div className="p-4 bg-muted/30 border border-border space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Status</span>
-                    <span className="text-xs font-bold uppercase tracking-widest text-red-500 animate-pulse">{scrapeStatus}</span>
+                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Status</span>
+                    <span className="text-xs font-bold uppercase tracking-widest text-primary animate-pulse">{scrapeStatus}</span>
                   </div>
                 </div>
               ) : (
-                <Button type="submit" disabled={!url} className="w-full bg-white text-black hover:bg-zinc-200 h-12 font-bold uppercase tracking-wider rounded-none">Scrape & Process</Button>
+                <Button type="submit" disabled={!url} className="w-full bg-foreground text-background hover:bg-muted-foreground h-12 font-bold uppercase tracking-wider rounded-none">Scrape & Process</Button>
               )}
             </form>
           </CardContent>
@@ -203,6 +205,7 @@ export default function AdminPage() {
                   <TableHead>Category</TableHead>
                   <TableHead>Source</TableHead>
                   <TableHead>Date Ingested</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -223,6 +226,16 @@ export default function AdminPage() {
                         {doc.source.startsWith("http") ? <a href={doc.source} target="_blank" rel="noreferrer" className="hover:underline text-blue-400">Link</a> : doc.source}
                       </TableCell>
                       <TableCell>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={async () => {
+                          try {
+                            await deleteDoc(doc.id);
+                            toast.success("Document deleted!");
+                          } catch { }
+                        }} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

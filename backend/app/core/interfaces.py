@@ -1,5 +1,6 @@
 import uuid
-from typing import Protocol, Sequence
+from collections.abc import Sequence
+from typing import Protocol
 
 from app.db.models import ChatMessage, ChatSession, Document, EvalRun, QuizResult, QuizSession
 

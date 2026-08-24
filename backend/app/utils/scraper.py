@@ -1,10 +1,3 @@
-"""Wikipedia scraper for UFC knowledge documents.
-
-Fetches article content via the Wikipedia REST API and scrapes
-full page text via HTML parsing. Includes politeness delays
-between requests and graceful error handling.
-"""
-
 from __future__ import annotations
 
 import time

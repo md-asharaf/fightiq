@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from app.services.ingestion_pipeline_service import ingest_bytes, ingest_text
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.dependencies import get_db, get_embedder
 from app.core.logging import get_logger
 from app.schemas.document import IngestResponse, IngestScrapeRequest, IngestSeedRequest
+from app.services.ingestion_service import ingest_bytes, ingest_text
 from app.services.seed_service import seed_knowledge_base
 from app.utils.embedder import Embedder
 from app.utils.scraper import scrape_topics_generator

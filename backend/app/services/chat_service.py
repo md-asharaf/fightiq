@@ -70,16 +70,16 @@ When citing sources, format them properly."""),
         agent = create_tool_calling_agent(self.llm, tools, prompt)
         return AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-    async def get_or_create_session(self, session_id_str: str):
+    async def get_or_create_session(self, session_id_str: str, user_id: str | None = None):
         session_uuid = uuid.UUID(session_id_str)
         chat_session = await self.repo.get_session(session_uuid)
         if not chat_session:
-            chat_session = await self.repo.create_session(session_uuid)
+            chat_session = await self.repo.create_session(session_uuid, user_id)
             await self.db.commit()
         return chat_session
 
-    async def process_message(self, session_id_str: str, message: str, stream: bool, filters: dict | None = None):
-        chat_session = await self.get_or_create_session(session_id_str)
+    async def process_message(self, session_id_str: str, message: str, stream: bool, user_id: str | None = None, filters: dict | None = None):
+        chat_session = await self.get_or_create_session(session_id_str, user_id)
         history: list[BaseMessage] = []
 
         state = attributes.instance_state(chat_session)
@@ -122,36 +122,45 @@ When citing sources, format them properly."""),
         )
 
     async def _stream_response(self, session_id: uuid.UUID, message: str, history: list[BaseMessage], filters: dict | None) -> AsyncGenerator[str, None]:
+        import asyncio
         full_response = ""
         sources: list[Any] = []
         agent_executor = self._build_agent_executor(filters)
 
-        async for event in agent_executor.astream_events(
-            {"input": message, "chat_history": history}, version="v2",
-        ):
-            kind = event["event"]
-            if kind == "on_tool_end" and event["name"] == "search_knowledge_base":
-                docs = event["data"].get("output", [])
-                if isinstance(docs, list):
-                    citations = extract_citations(docs)
-                    payload = json.dumps({"type": "sources", "sources": citations})
+        try:
+            async for event in agent_executor.astream_events(
+                {"input": message, "chat_history": history}, version="v2",
+            ):
+                kind = event["event"]
+                if kind == "on_tool_end" and event["name"] == "search_knowledge_base":
+                    docs: Any = event["data"].get("output", [])
+                    if isinstance(docs, list):
+                        citations = extract_citations(docs)
+                        payload = json.dumps({"type": "sources", "sources": citations})
+                        yield f"data: {payload}\n\n"
+                elif kind == "on_chat_model_stream":
+                    chunk_content = event["data"]["chunk"].content
+                    if isinstance(chunk_content, list):
+                        chunk_str = "".join(block.get("text", "") for block in chunk_content if block.get("type") == "text")
+                    else:
+                        chunk_str = str(chunk_content)
+                    if chunk_str:
+                        payload = json.dumps({"type": "chunk", "content": chunk_str})
+                        yield f"data: {payload}\n\n"
+                        full_response += chunk_str
+                elif kind == "on_chain_end" and event["name"] == "AgentExecutor":
+                    payload = json.dumps({"type": "done"})
                     yield f"data: {payload}\n\n"
-            elif kind == "on_chat_model_stream":
-                chunk_content = event["data"]["chunk"].content
-                if isinstance(chunk_content, list):
-                    chunk_str = "".join(block.get("text", "") for block in chunk_content if block.get("type") == "text")
-                else:
-                    chunk_str = str(chunk_content)
-                if chunk_str:
-                    payload = json.dumps({"type": "chunk", "content": chunk_str})
-                    yield f"data: {payload}\n\n"
-                    full_response += chunk_str
-            elif kind == "on_chain_end" and event["name"] == "AgentExecutor":
-                payload = json.dumps({"type": "done"})
-                yield f"data: {payload}\n\n"
 
-        await self.repo.add_message(session_id, "assistant", full_response, sources)
-        await self.db.commit()
+            await self.repo.add_message(session_id, "assistant", full_response, sources)
+            await self.db.commit()
+
+        except asyncio.CancelledError:
+            log.warning("Stream cancelled by client. Saving partial response.")
+            if full_response:
+                await self.repo.add_message(session_id, "assistant", full_response, sources)
+                await self.db.commit()
+            raise
 
     async def get_history(self, session_id_str: str) -> ChatHistory:
         session_uuid = uuid.UUID(session_id_str)
@@ -164,6 +173,25 @@ When citing sources, format them properly."""),
             for m in sorted_messages
         ]
         return ChatHistory(session_id=session_id_str, messages=messages)
+
+    async def list_sessions(self, user_id: str | None = None) -> list[Any]:
+        from app.schemas.chat import ChatSessionPreview
+        sessions = await self.repo.list_sessions(user_id=user_id)
+        previews = []
+        for s in sessions:
+            preview_text = "New Chat"
+            for m in s.messages:
+                if m.role == "user":
+                    preview_text = m.content[:50] + ("..." if len(m.content) > 50 else "")
+                    break
+            previews.append(
+                ChatSessionPreview(
+                    session_id=str(s.id),
+                    created_at=s.created_at,
+                    preview_text=preview_text
+                )
+            )
+        return previews
 
     async def delete_history(self, session_id_str: str) -> bool:
         session_uuid = uuid.UUID(session_id_str)

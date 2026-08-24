@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.services.ingestion_pipeline_service import ingest_path
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.db.models import Document
+from app.services.ingestion_service import ingest_path
 from app.utils.embedder import Embedder
 
 log = get_logger(__name__)

@@ -5,11 +5,11 @@ from fastapi import APIRouter, Depends, status
 
 from app.core.dependencies import get_quiz_service
 from app.schemas.quiz import (
+    QuestionResult,
     QuizGenerateRequest,
     QuizSessionRead,
     QuizSubmitRequest,
     QuizSubmitResponse,
-    QuestionResult
 )
 from app.services.quiz_service import QuizService
 

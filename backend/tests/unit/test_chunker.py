@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from langchain_core.documents import Document as LCDocument
 
-from app.services.chunking_service import chunk_text
+from app.utils.text_chunker import chunk_text
 
 
 class TestChunkText:

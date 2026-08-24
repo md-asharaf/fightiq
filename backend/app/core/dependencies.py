@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, Request, status
 from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool, StructuredTool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import SecretStr
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -17,6 +18,8 @@ from app.core.interfaces import (
     IQuizRepository,
     IWebSearchProvider,
 )
+from app.db.auth_models import Session as AuthSession
+from app.db.auth_models import User
 from app.db.session import AsyncSessionLocal
 from app.utils.embedder import Embedder
 
@@ -48,11 +51,39 @@ def get_embedder() -> Embedder:
     return _embedder
 
 
+async def get_current_user(
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+) -> User | None:
+    token = request.cookies.get("better-auth.session_token")
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+
+    if not token:
+        return None
+
+    stmt = select(User).join(AuthSession, User.id == AuthSession.userId).where(AuthSession.token == token)
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+def require_auth(user: User | None = Depends(get_current_user)) -> User:
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+    return user
+
+
 def get_llm() -> BaseChatModel:
     return ChatGoogleGenerativeAI(
         model=settings.llm_model,
         google_api_key=SecretStr(settings.google_api_key),
         max_output_tokens=1024,
+        streaming=True,
     )
 
 

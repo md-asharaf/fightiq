@@ -17,9 +17,19 @@ class ChatRepository(BaseRepository[ChatSession]):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create_session(self, session_id: uuid.UUID) -> ChatSession:
-        chat_session = ChatSession(id=session_id)
+    async def create_session(self, session_id: uuid.UUID, user_id: str | None = None) -> ChatSession:
+        chat_session = ChatSession(id=session_id, user_id=user_id)
         return self.add(chat_session)
+
+    async def list_sessions(self, user_id: str | None = None, limit: int = 50) -> list[ChatSession]:
+        stmt = select(ChatSession).order_by(ChatSession.created_at.desc()).limit(limit)
+        if user_id:
+            stmt = stmt.where(ChatSession.user_id == user_id)
+        else:
+            stmt = stmt.where(ChatSession.user_id.is_(None))
+        stmt = stmt.options(selectinload(ChatSession.messages))
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
 
     async def add_message(
         self, session_id: uuid.UUID, role: str, content: str, sources: list | None = None

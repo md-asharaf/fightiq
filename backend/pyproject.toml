@@ -30,6 +30,7 @@ dependencies = [
     "beautifulsoup4>=4.12.0",
     "exa-py>=1.0.0",
     "langchain-exa>=0.1.0",
+    "langchain-core>=1.6.0",
 ]
 
 [project.optional-dependencies]
@@ -77,10 +78,7 @@ dev = [
     "pytest-asyncio>=1.4.0",
     "ruff>=0.16.4",
 ]
-# ── Pyrefly (IDE type checker) ─────────────────────────────────────────────────
-# The project venv uses uv's isolated CPython 3.12 at a non-standard path.
-# Pyrefly's interpreter query returns system Python 3.14 site-packages instead
-# of the venv's packages. We bypass this by specifying the path directly.
+
 [tool.pyrefly]
 python_version = "3.12"
 search_path = [

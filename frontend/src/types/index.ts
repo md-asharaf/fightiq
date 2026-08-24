@@ -69,3 +69,8 @@ export interface ChatMessageData {
   content: string;
   sources?: ChatSource[];
 }
+export interface ChatSessionPreview {
+  session_id: string;
+  created_at: string;
+  preview_text: string;
+}

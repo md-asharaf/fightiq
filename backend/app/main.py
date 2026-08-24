@@ -4,7 +4,6 @@ import traceback
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from app.core.database import engine
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -12,6 +11,7 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.core.exceptions import ResourceNotFoundError, ValidationError
 from app.core.logging import configure_logging, get_logger
+from app.db.session import engine
 
 configure_logging()
 log = get_logger(__name__)
@@ -64,21 +64,21 @@ app = FastAPI(
 
 
 @app.exception_handler(ResourceNotFoundError)
-async def resource_not_found_handler(request: Request, exc: ResourceNotFoundError):
+async def resource_not_found_handler(_request: Request, exc: ResourceNotFoundError):
     return JSONResponse(
         status_code=404,
         content={"detail": exc.message}
     )
 
 @app.exception_handler(ValidationError)
-async def validation_error_handler(request: Request, exc: ValidationError):
+async def validation_error_handler(_request: Request, exc: ValidationError):
     return JSONResponse(
         status_code=422,
         content={"detail": exc.message}
     )
 
 @app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
+async def global_exception_handler(_request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc), "traceback": traceback.format_exc()}

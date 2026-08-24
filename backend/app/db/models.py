@@ -146,6 +146,9 @@ class ChatSession(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
     )
+    user_id: Mapped[str | None] = mapped_column(
+        String(255), ForeignKey("user.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False,
     )
@@ -193,3 +196,5 @@ class EvalRun(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False,
     )
+
+from app.db.auth_models import Account, Session, User, Verification  # noqa: E402, F401

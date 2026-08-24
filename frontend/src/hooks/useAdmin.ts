@@ -7,7 +7,10 @@ export function useAdmin() {
 
   const { data: documents = [], isLoading: loading, refetch: loadDocuments } = useQuery<Document[]>({
     queryKey: ["documents"],
-    queryFn: () => fetchApi("/documents"),
+    queryFn: async () => {
+      const res = await fetchApi("/documents");
+      return res.items || [];
+    },
   });
 
   const seedMutation = useMutation({
@@ -17,7 +20,29 @@ export function useAdmin() {
 
   const uploadMutation = useMutation({
     mutationFn: ({ file, category }: { file: File; category: string }) => uploadFile("/ingest/file", file, { category }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["documents"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => fetchApi(`/documents/${id}`, { method: "DELETE" }),
+    onMutate: async (deletedId) => {
+      await queryClient.cancelQueries({ queryKey: ["documents"] });
+      const previousDocs = queryClient.getQueryData<Document[]>(["documents"]);
+      queryClient.setQueryData<Document[]>(["documents"], (old) => 
+        old ? old.filter((doc) => doc.id !== deletedId) : []
+      );
+      return { previousDocs };
+    },
+    onError: (err, deletedId, context) => {
+      if (context?.previousDocs) {
+        queryClient.setQueryData(["documents"], context.previousDocs);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+    },
   });
 
   const scrapeMutation = useMutation({
@@ -32,9 +57,11 @@ export function useAdmin() {
     documents,
     loading,
     seeding: seedMutation.isPending,
+    uploading: uploadMutation.isPending,
     loadDocuments,
     seedData: () => seedMutation.mutateAsync(),
     uploadDoc: (file: File, category: string) => uploadMutation.mutateAsync({ file, category }),
+    deleteDoc: (id: string) => deleteMutation.mutateAsync(id),
     scrapeUrl: (url: string, category: string) => scrapeMutation.mutateAsync({ url, category }),
   };
 }

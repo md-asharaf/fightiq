@@ -1,22 +1,22 @@
 from collections.abc import AsyncGenerator
+import uuid
+from unittest.mock import AsyncMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from pytest import MonkeyPatch
 
-from app.core.dependencies import get_db, get_embedder
+from app.core.dependencies import get_db, get_embedder, get_eval_service
 from app.main import app
 
 
 # Mock get_db
 async def override_get_db():
-    from unittest.mock import AsyncMock
     yield AsyncMock()
 
 
 # Mock get_embedder
 def override_get_embedder():
-    from unittest.mock import AsyncMock, MagicMock
+    from unittest.mock import MagicMock
     mock = MagicMock()
     mock.aembed_query = AsyncMock(return_value=[0.1] * 1536)
     return mock
@@ -34,34 +34,37 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
         yield c
 
 
+@pytest.fixture
+def mock_eval_service():
+    mock = AsyncMock()
+    app.dependency_overrides[get_eval_service] = lambda: mock
+    yield mock
+    app.dependency_overrides.pop(get_eval_service, None)
+
+
 @pytest.mark.asyncio
-async def test_api_get_eval_results(client: AsyncClient):
+async def test_api_get_eval_results(client: AsyncClient, mock_eval_service):
     """Test retrieving eval results (should be empty initially)."""
+    mock_eval_service.get_results.return_value = []
     response = await client.get("/api/eval/results")
     assert response.status_code == 200
     assert response.json() == []
 
 
 @pytest.mark.asyncio
-async def test_api_run_evaluation_mock(client: AsyncClient, monkeypatch: MonkeyPatch):
+async def test_api_run_evaluation_mock(client: AsyncClient, mock_eval_service):
     """Test triggering an evaluation run with mocked eval engine."""
-    import uuid
-
     from app.schemas.eval import EvalRunResult
 
-    # Mock run_evaluation to avoid real LLM calls and DB calls
-    async def mock_run_evaluation(_session, _embedder):
-        return EvalRunResult(
-            run_id=str(uuid.uuid4()),
-            dataset_name="eval_dataset.json",
-            overall_scores={"faithfulness": 0.95},
-            question_results=[],
-        )
+    mock_eval_service.run_evaluation.return_value = EvalRunResult(
+        run_id=str(uuid.uuid4()),
+        dataset_name="eval_dataset.json",
+        overall_scores={"faithfulness": 0.95},
+        question_results=[],
+    )
 
-    # Note: since run_evaluation is imported directly in eval_service.py, we patch it in the target module
-    monkeypatch.setattr("app.services.eval_service.run_evaluation", mock_run_evaluation)
-
-    response = await client.get("/api/eval/run")
+    # The eval/run endpoint is POST, not GET
+    response = await client.post("/api/eval/run")
     assert response.status_code == 200
     data = response.json()
     assert "run_id" in data

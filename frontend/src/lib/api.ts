@@ -1,4 +1,5 @@
 import { ChatSource } from "@/types";
+import { toast } from "sonner";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
@@ -14,7 +15,9 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `API request failed with status ${response.status}`);
+    const errorMsg = errorData.detail || `API request failed with status ${response.status}`;
+    toast.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   return response.json();
@@ -35,7 +38,9 @@ export async function uploadFile(endpoint: string, file: File, metadata: Record<
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `File upload failed with status ${response.status}`);
+    const errorMsg = errorData.detail || `File upload failed with status ${response.status}`;
+    toast.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   return response.json();
@@ -52,7 +57,8 @@ export interface StreamChatCallbacks {
 export async function streamChat(
   sessionId: string,
   message: string,
-  callbacks: StreamChatCallbacks
+  callbacks: StreamChatCallbacks,
+  signal?: AbortSignal
 ) {
   const url = `${API_BASE_URL}/chat/message`;
   try {
@@ -60,6 +66,7 @@ export async function streamChat(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ session_id: sessionId, message }),
+      signal,
     });
 
     if (!response.ok) {
@@ -102,7 +109,12 @@ export async function streamChat(
     }
     callbacks.onComplete();
   } catch (error) {
-    callbacks.onError(error instanceof Error ? error : new Error(String(error)));
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('Stream aborted by user');
+      callbacks.onComplete();
+    } else {
+      callbacks.onError(error instanceof Error ? error : new Error(String(error)));
+    }
   }
 }
 
