@@ -3,9 +3,8 @@ import { admin } from "better-auth/plugins";
 import { Pool } from "pg";
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || "postgresql://fightiq:fightiq_secret@localhost:5432/fightiq",
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
-  options: 'endpoint=ep-royal-block-b315rtcq-pooler'
 });
 
 export const auth = betterAuth({

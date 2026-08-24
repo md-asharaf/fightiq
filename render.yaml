@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: fightiq-api
+    env: python
+    buildCommand: "cd backend && pip install uv && uv sync --no-dev"
+    startCommand: "cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: ENVIRONMENT
+        value: production
+      - key: FRONTEND_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: EXA_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false

@@ -28,20 +28,8 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     embedder = Embedder()
     set_embedder(embedder)
 
-    from app.db.session import AsyncSessionLocal
-    from app.services.seed_service import seed_knowledge_base
-
-    async with AsyncSessionLocal() as session:
-        from app.repositories.chunk_repository import ChunkRepository
-        from app.repositories.document_repository import DocumentRepository
-        doc_repo = DocumentRepository(session=session)
-        chunk_repo = ChunkRepository(session=session)
-        counts = await seed_knowledge_base(doc_repo=doc_repo, chunk_repo=chunk_repo, embedder=embedder, force=False)
-        total_seeded = sum(counts.values())
-        if total_seeded:
-            log.info("Seed data ingested on startup", total=total_seeded, by_category=counts)
-        else:
-            log.info("Knowledge base already seeded — no new documents added")
+    # Seeding has been moved to a separate script (app.scripts.seed)
+    # to avoid running it on every application startup.
 
     log.info("FightIQ backend ready to serve requests")
     yield
@@ -83,9 +71,14 @@ async def validation_error_handler(_request: Request, exc: ValidationError):
 
 @app.exception_handler(Exception)
 async def global_exception_handler(_request: Request, exc: Exception):
+    content = {"detail": "Internal server error"}
+    if settings.environment == "development":
+        content["detail"] = str(exc)
+        content["traceback"] = traceback.format_exc()
+        
     return JSONResponse(
         status_code=500,
-        content={"detail": str(exc), "traceback": traceback.format_exc()}
+        content=content
     )
 
 app.add_middleware(

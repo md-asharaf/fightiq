@@ -70,7 +70,7 @@ async def get_current_user(
     # Verify session using Better-Auth API
     import httpx
 
-    auth_url = "http://localhost:3000/api/auth/get-session"
+    auth_url = f"{settings.frontend_url.rstrip('/')}/api/auth/get-session"
     headers = {"cookie": request.headers.get("cookie", "")}
     if auth_header := request.headers.get("Authorization"):
         headers["Authorization"] = auth_header

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "FightIQ"
+    frontend_url: str = "http://localhost:3000"
     environment: str = "development"
     log_level: str = "INFO"
 
