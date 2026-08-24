@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import React from "react";
 import { ExternalLink, FileText } from "lucide-react";
 import { ChatSource } from "@/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -14,7 +15,7 @@ export interface MessageProps {
   sources?: ChatSource[];
 }
 
-export function ChatMessage({ role, content, sources }: MessageProps) {
+export const ChatMessage = React.memo(function ChatMessage({ role, content, sources }: MessageProps) {
   const { data: session } = useSession();
   const isUser = role === "user";
   const userName = session?.user?.name || "User";
@@ -82,4 +83,4 @@ export function ChatMessage({ role, content, sources }: MessageProps) {
       </div>
     </motion.div>
   );
-}
+});

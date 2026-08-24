@@ -22,7 +22,6 @@ export function AdminDashboardView() {
   const { documents, totalDocuments, isLoading, isFetching, uploading, seeding, loadDocuments, seedData, uploadDoc, deleteDoc } = useAdmin(page, pageSize);
   const [file, setFile] = useState<File | null>(null);
   const [category, setCategory] = useState("fighters");
-  const [url, setUrl] = useState("");
   const [scrapeStatus, setScrapeStatus] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -58,14 +57,17 @@ export function AdminDashboardView() {
     message?: string;
   }
 
-  const handleScrape = async (e: React.FormEvent) => {
+  const handleScrape = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const url = formData.get("url") as string;
+    const currentCategory = formData.get("scrapeCategory") as string || category;
     if (!url) return;
 
     setScrapeStatus("Connecting...");
 
     import("@/lib/api").then(({ streamScrape }) => {
-      streamScrape([url], category, {
+      streamScrape([url], currentCategory, {
         onProgress: (status, data: unknown) => {
           const progressData = data as ProgressData;
           if (status === "scraping") setScrapeStatus(`Scraping ${progressData.topic}...`);
@@ -80,7 +82,7 @@ export function AdminDashboardView() {
         onComplete: () => {
           setScrapeStatus("Complete!");
           setTimeout(() => setScrapeStatus(""), 2000);
-          setUrl("");
+          (e.target as HTMLFormElement).reset();
           loadDocuments();
         }
       });
@@ -161,7 +163,7 @@ export function AdminDashboardView() {
             <form onSubmit={handleScrape} className="space-y-6">
               <div className="space-y-3">
                 <Label htmlFor="scrapeCategory" className="text-xs font-bold text-muted-foreground">Category</Label>
-                <Select value={category} onValueChange={(val) => setCategory(val || "fighters")}>
+                <Select name="scrapeCategory" defaultValue={category} onValueChange={(val) => setCategory(val || "fighters")}>
                   <SelectTrigger id="scrapeCategory" className="bg-background border-border text-foreground h-12 rounded-none focus:ring-primary">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
@@ -175,7 +177,7 @@ export function AdminDashboardView() {
               </div>
               <div className="space-y-3">
                 <Label htmlFor="url" className="text-xs font-bold text-muted-foreground">URL / Topic</Label>
-                <Input id="url" placeholder="https://ufcstats.com/... or Topic Name" value={url} onChange={(e) => setUrl(e.target.value)} required className="bg-background border-border text-foreground h-12 focus-visible:ring-primary rounded-none placeholder:text-muted-foreground" />
+                <Input id="url" name="url" defaultValue="" placeholder="https://ufcstats.com/... or Topic Name" required className="bg-background border-border text-foreground h-12 focus-visible:ring-primary rounded-none placeholder:text-muted-foreground" />
               </div>
 
               {scrapeStatus ? (
@@ -186,7 +188,7 @@ export function AdminDashboardView() {
                   </div>
                 </div>
               ) : (
-                <Button type="submit" disabled={!url} className="w-full bg-foreground text-background hover:bg-muted-foreground h-12 font-bold rounded-none">Scrape & Process</Button>
+                <Button type="submit" className="w-full bg-foreground text-background hover:bg-muted-foreground h-12 font-bold rounded-none">Scrape & Process</Button>
               )}
             </form>
           </CardContent>

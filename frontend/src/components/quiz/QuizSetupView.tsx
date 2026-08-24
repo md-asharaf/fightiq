@@ -18,13 +18,13 @@ import { QuizSession } from "@/types";
 export function QuizSetupView() {
   const router = useRouter();
   const { sessions, loadingSessions, generateQuiz } = useQuizList();
-
-  const [topic, setTopic] = useState("");
-  const [difficulty, setDifficulty] = useState("intermediate");
   const [loading, setLoading] = useState(false);
 
-  const handleGenerate = async (e: React.FormEvent) => {
+  const handleGenerate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const topic = formData.get("topic") as string;
+    const difficulty = formData.get("difficulty") as string;
     if (!topic.trim()) return;
 
     setLoading(true);
@@ -63,8 +63,8 @@ export function QuizSetupView() {
                   <Label htmlFor="topic" className="text-xs font-bold text-muted-foreground">Topic (e.g. Khabib, UFC 300, Rules)</Label>
                   <Input
                     id="topic"
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
+                    name="topic"
+                    defaultValue=""
                     placeholder="Enter any UFC topic..."
                     required
                     className="bg-background border-border text-foreground h-12 focus-visible:ring-primary rounded-none placeholder:text-muted-foreground"
@@ -72,7 +72,7 @@ export function QuizSetupView() {
                 </div>
                 <div className="space-y-3">
                   <Label htmlFor="difficulty" className="text-xs font-bold text-muted-foreground">Difficulty</Label>
-                  <Select value={difficulty} onValueChange={(val: string | null) => setDifficulty(val || "intermediate")}>
+                  <Select name="difficulty" defaultValue="intermediate">
                     <SelectTrigger id="difficulty" className="bg-background border-border text-foreground h-12 rounded-none focus:ring-primary">
                       <SelectValue placeholder="Select difficulty" />
                     </SelectTrigger>
@@ -86,7 +86,7 @@ export function QuizSetupView() {
               </form>
             </CardContent>
             <CardFooter className="bg-muted/30 pt-6 border-t border-border">
-              <Button type="submit" form="quiz-form" disabled={loading || !topic} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-14 font-bold rounded-none text-lg">
+              <Button type="submit" form="quiz-form" disabled={loading} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-14 font-bold rounded-none text-lg">
                 {loading ? (
                   <>
                     <Loader2 className="mr-3 h-5 w-5 animate-spin" /> Generating...

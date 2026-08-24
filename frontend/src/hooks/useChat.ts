@@ -19,7 +19,6 @@ export function useChat() {
 
   const urlSessionId = searchParams.get("session") || "";
   const [messages, setMessages] = useState<MessageProps[]>([]);
-  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const [sessionId, setSessionId] = useState(() => generateSessionId());
@@ -110,19 +109,19 @@ export function useChat() {
     ]);
   }, [updateUrlSession]);
 
-  const handleSend = useCallback((e?: React.FormEvent | string) => {
-    if (e && typeof e !== "string" && "preventDefault" in e) e.preventDefault();
-    const textToSend = typeof e === "string" ? e : input;
-    if (typeof e !== "string") setInput("");
+  const handleSend = useCallback((message: string | React.FormEvent) => {
+    if (typeof message !== "string" && "preventDefault" in message) {
+      message.preventDefault();
+      return;
+    }
+    const textToSend = typeof message === "string" ? message : "";
     if (!textToSend.trim() || isLoading) return;
     
     handleSendStream(textToSend);
-  }, [input, isLoading, handleSendStream]);
+  }, [isLoading, handleSendStream]);
 
   return {
     messages,
-    input,
-    setInput,
     isLoading,
     sessionId,
     sessions,

@@ -48,6 +48,14 @@ export function useChatStream(
         });
       },
       onComplete: () => {
+        setMessages(prev => {
+          const newMsgs = [...prev];
+          const lastMsg = newMsgs[newMsgs.length - 1];
+          if (lastMsg.role === "assistant" && !lastMsg.content.trim()) {
+            lastMsg.content = "Sorry, I couldn't generate a response. Please try again.";
+          }
+          return newMsgs;
+        });
         setIsLoading(false);
         abortControllerRef.current = null;
         queryClient.invalidateQueries({ queryKey: ["chat_sessions"] });

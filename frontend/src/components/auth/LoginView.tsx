@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "@/lib/auth-client";
+import { useState, useEffect } from "react";
+import { signIn, useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,13 @@ export function LoginView({ defaultIsLogin = true }: { defaultIsLogin?: boolean 
   const [password, setPassword] = useState("");
   const isLogin = defaultIsLogin;
   const [loading, setLoading] = useState(false);
+  const { data: session, isPending } = useSession();
+
+  useEffect(() => {
+    if (session) {
+      router.push("/");
+    }
+  }, [session, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +38,7 @@ export function LoginView({ defaultIsLogin = true }: { defaultIsLogin?: boolean 
         toast.error(error.message);
       } else {
         toast.success("Logged in successfully");
-        router.push("/chat");
+        router.push("/");
       }
     } else {
       const { signUp } = await import("@/lib/auth-client");
@@ -45,7 +52,7 @@ export function LoginView({ defaultIsLogin = true }: { defaultIsLogin?: boolean 
         toast.error(error.message);
       } else {
         toast.success("Account created successfully");
-        router.push("/chat");
+        router.push("/");
       }
     }
   };
@@ -54,13 +61,21 @@ export function LoginView({ defaultIsLogin = true }: { defaultIsLogin?: boolean 
     setLoading(true);
     const { error } = await signIn.social({
       provider: "google",
-      callbackURL: "/chat",
+      callbackURL: "/",
     });
     setLoading(false);
     if (error) {
       toast.error(error.message || "Google Sign-In failed or not configured.");
     }
   };
+
+  if (isPending || session) {
+    return (
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-background p-4">

@@ -128,6 +128,14 @@ class ChatService:
             if full_response:
                 await self.repo.add_message(session_id, "assistant", full_response, sources)
             raise
+        except Exception as e:
+            log.error(f"Error during streaming response: {e}", exc_info=True)
+            error_msg = "\n\n**Error**: An unexpected error occurred while generating the response. Please try again."
+            payload = json.dumps({"type": "chunk", "content": error_msg})
+            yield f"data: {payload}\n\n"
+            
+            full_response += error_msg
+            await self.repo.add_message(session_id, "assistant", full_response, sources)
 
     async def get_history(self, session_id_str: str, user_id: str | None = None) -> ChatHistory:
         session_uuid = uuid.UUID(session_id_str)
