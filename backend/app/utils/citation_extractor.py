@@ -17,6 +17,8 @@ def extract_citations(docs: list[Document]) -> list[dict[str, Any]]:
     citations = []
 
     for doc in docs:
+        if not hasattr(doc, "metadata"):
+            continue
         meta = doc.metadata
         title = meta.get("title", meta.get("filename", "Unknown Source"))
         if title not in seen_sources:

@@ -1,17 +1,19 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
+from app.services.ingestion_pipeline_service import ingest_bytes, ingest_text
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_db, get_embedder
 from app.core.logging import get_logger
-from app.ingestion.embedder import Embedder
-from app.ingestion.pipeline import ingest_bytes, ingest_text
-from app.ingestion.scraper import scrape_topics
-from app.ingestion.seed import seed_knowledge_base
 from app.schemas.document import IngestResponse, IngestScrapeRequest, IngestSeedRequest
+from app.services.seed_service import seed_knowledge_base
+from app.utils.embedder import Embedder
+from app.utils.scraper import scrape_topics_generator
 
 log = get_logger(__name__)
 router = APIRouter()
@@ -131,50 +133,54 @@ async def ingest_file(
 
 @router.post(
     "/scrape",
-    response_model=IngestResponse,
-    summary="Scrape Wikipedia articles and ingest",
+    summary="Scrape Wikipedia or URLs and ingest (SSE Stream)",
     description=(
-        "Fetches Wikipedia articles for the given topic titles, "
-        "extracts their text content, and ingests into the vector store. "
-        "Includes politeness delays between requests."
+        "Streams Server-Sent Events (SSE) detailing the progress of scraping "
+        "and embedding each topic/URL into the vector store."
     ),
 )
 async def ingest_scrape(
     request: IngestScrapeRequest,
     db: AsyncSession = Depends(get_db),
     embedder: Embedder = Depends(get_embedder),
-) -> IngestResponse:
-    log.info("Wikipedia scrape requested", topics=request.topics, category=request.category)
+):
+    log.info("Scrape requested", topics=request.topics, category=request.category)
 
-    scraped = scrape_topics(request.topics)
+    async def event_generator():
+        total_chunks = 0
+        success_count = 0
 
-    if not scraped:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="No content could be retrieved from the provided Wikipedia topics. "
-                   "Check that the topic names match Wikipedia article titles.",
-        )
+        for step in scrape_topics_generator(request.topics):
+            if step["status"] == "scraping":
+                yield f"data: {json.dumps(step)}\n\n"
+            elif step["status"] == "success":
+                item = step["data"]
+                topic = step["topic"]
+                yield f"data: {json.dumps({'status': 'embedding', 'topic': topic})}\n\n"
 
-    total_chunks = 0
-    for item in scraped:
-        doc = await ingest_text(
-            text=item["content"],
-            title=item["title"],
-            source=item["url"],
-            category=request.category,
-            source_type="scraped",
-            metadata={
-                "url": item["url"],
-                "category": request.category,
-                "scraped_from": "wikipedia",
-            },
-            session=db,
-            embedder=embedder,
-        )
-        total_chunks += doc.chunk_count
+                try:
+                    doc = await ingest_text(
+                        text=item["content"],
+                        title=item["title"],
+                        source=item["url"],
+                        category=request.category,
+                        source_type="scraped",
+                        metadata={
+                            "url": item["url"],
+                            "category": request.category,
+                            "scraped_from": "web",
+                        },
+                        session=db,
+                        embedder=embedder,
+                    )
+                    total_chunks += doc.chunk_count
+                    success_count += 1
+                    yield f"data: {json.dumps({'status': 'embedded', 'topic': topic, 'chunks': doc.chunk_count})}\n\n"
+                except Exception as e:
+                    yield f"data: {json.dumps({'status': 'error', 'topic': topic, 'message': str(e)})}\n\n"
+            elif step["status"] == "error":
+                yield f"data: {json.dumps(step)}\n\n"
 
-    return IngestResponse(
-        message=f"Scraped and ingested {len(scraped)} of {len(request.topics)} topics.",
-        documents_created=len(scraped),
-        chunks_created=total_chunks,
-    )
+        yield f"data: {json.dumps({'status': 'complete', 'documents_created': success_count, 'chunks_created': total_chunks})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

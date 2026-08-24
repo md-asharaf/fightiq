@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from app.ingestion.loader import load_file, load_json, load_text
+from app.services.loading_service import load_file, load_json, load_text
 
 
 class TestLoadText:

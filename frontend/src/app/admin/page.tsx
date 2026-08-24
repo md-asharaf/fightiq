@@ -13,10 +13,11 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function AdminPage() {
-  const { documents, loading, seeding, loadDocuments, seedData, uploadDoc, scrapeUrl } = useAdmin();
+  const { documents, loading, seeding, loadDocuments, seedData, uploadDoc } = useAdmin();
   const [file, setFile] = useState<File | null>(null);
   const [category, setCategory] = useState("fighters");
   const [url, setUrl] = useState("");
+  const [scrapeStatus, setScrapeStatus] = useState("");
 
   useEffect(() => {
     loadDocuments();
@@ -44,17 +45,39 @@ export default function AdminPage() {
     }
   };
 
+  interface ProgressData {
+    topic?: string;
+    chunks?: number;
+    message?: string;
+  }
+
   const handleScrape = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
 
-    try {
-      await scrapeUrl(url, category);
-      setUrl("");
-    } catch (error: unknown) {
-      if (error instanceof Error) alert("Scrape failed: " + error.message);
-      else alert("Scrape failed: Unknown error");
-    }
+    setScrapeStatus("Connecting...");
+
+    import("@/lib/api").then(({ streamScrape }) => {
+      streamScrape([url], category, {
+        onProgress: (status, data: unknown) => {
+          const progressData = data as ProgressData;
+          if (status === "scraping") setScrapeStatus(`Scraping ${progressData.topic}...`);
+          else if (status === "embedding") setScrapeStatus(`Vectorizing ${progressData.topic}...`);
+          else if (status === "embedded") setScrapeStatus(`Indexed ${progressData.chunks} chunks for ${progressData.topic}`);
+          else if (status === "error") setScrapeStatus(`Error: ${progressData.message}`);
+        },
+        onError: (err) => {
+          setScrapeStatus(`Failed: ${err.message}`);
+          setTimeout(() => setScrapeStatus(""), 3000);
+        },
+        onComplete: () => {
+          setScrapeStatus("Complete!");
+          setTimeout(() => setScrapeStatus(""), 2000);
+          setUrl("");
+          loadDocuments();
+        }
+      });
+    });
   };
 
   return (
@@ -64,9 +87,9 @@ export default function AdminPage() {
           <h1 className="text-3xl font-bold tracking-tight">Knowledge Base Admin</h1>
           <p className="text-muted-foreground">Manage UFC documents, trigger seeding, and run web scrapers.</p>
         </div>
-        
+
         <AlertDialog>
-          <AlertDialogTrigger 
+          <AlertDialogTrigger
             render={<Button disabled={seeding} className="bg-red-600 hover:bg-red-700 text-white" />}
           >
             {seeding ? <RefreshCcw className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
@@ -89,63 +112,73 @@ export default function AdminPage() {
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Upload Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Upload className="h-5 w-5 text-red-500" /> Upload Document</CardTitle>
-            <CardDescription>Upload a local Markdown, PDF, or text file.</CardDescription>
+        <Card className="bg-black border-white/10 shadow-xl rounded-none">
+          <CardHeader className="border-b border-white/5 bg-zinc-900/30">
+            <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter text-white"><Upload className="h-5 w-5 text-red-500" /> Upload Document</CardTitle>
+            <CardDescription className="text-zinc-400 font-medium">Upload a local Markdown, PDF, or text file.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleUpload} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+          <CardContent className="pt-6">
+            <form onSubmit={handleUpload} className="space-y-6">
+              <div className="space-y-3">
+                <Label htmlFor="category" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Category</Label>
                 <Select value={category} onValueChange={(val) => setCategory(val || "fighters")}>
-                  <SelectTrigger id="category">
+                  <SelectTrigger id="category" className="bg-zinc-900 border-white/10 text-white h-12 rounded-none focus:ring-red-600">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="fighters">Fighters</SelectItem>
-                    <SelectItem value="events">Events</SelectItem>
-                    <SelectItem value="history">History</SelectItem>
-                    <SelectItem value="rules">Rules</SelectItem>
+                  <SelectContent className="bg-zinc-900 border-white/10 text-white rounded-none">
+                    <SelectItem value="fighters" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">Fighters</SelectItem>
+                    <SelectItem value="events" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">Events</SelectItem>
+                    <SelectItem value="history" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">History</SelectItem>
+                    <SelectItem value="rules" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">Rules</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="file">File</Label>
-                <Input id="file" type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} required />
+              <div className="space-y-3">
+                <Label htmlFor="file" className="text-xs font-bold uppercase tracking-widest text-zinc-500">File</Label>
+                <Input id="file" type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} required className="bg-zinc-900 border-white/10 text-white h-12 focus-visible:ring-red-600 rounded-none file:text-red-500 file:font-bold file:uppercase file:tracking-widest" />
               </div>
-              <Button type="submit" disabled={!file} className="w-full">Upload & Process</Button>
+              <Button type="submit" disabled={!file} className="w-full bg-red-600 hover:bg-red-700 text-white h-12 font-bold uppercase tracking-wider rounded-none">Upload & Process</Button>
             </form>
           </CardContent>
         </Card>
 
         {/* Scrape Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5 text-red-500" /> Web Scraper</CardTitle>
-            <CardDescription>Scrape knowledge from Wikipedia or other allowed URLs.</CardDescription>
+        <Card className="bg-black border-white/10 shadow-xl rounded-none">
+          <CardHeader className="border-b border-white/5 bg-zinc-900/30">
+            <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter text-white"><Globe className="h-5 w-5 text-red-500" /> Web Scraper</CardTitle>
+            <CardDescription className="text-zinc-400 font-medium">Scrape knowledge from Wikipedia, ufc.com, or ufcstats.com.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleScrape} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="scrapeCategory">Category</Label>
+          <CardContent className="pt-6">
+            <form onSubmit={handleScrape} className="space-y-6">
+              <div className="space-y-3">
+                <Label htmlFor="scrapeCategory" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Category</Label>
                 <Select value={category} onValueChange={(val) => setCategory(val || "fighters")}>
-                  <SelectTrigger id="scrapeCategory">
+                  <SelectTrigger id="scrapeCategory" className="bg-zinc-900 border-white/10 text-white h-12 rounded-none focus:ring-red-600">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="fighters">Fighters</SelectItem>
-                    <SelectItem value="events">Events</SelectItem>
-                    <SelectItem value="history">History</SelectItem>
-                    <SelectItem value="rules">Rules</SelectItem>
+                  <SelectContent className="bg-zinc-900 border-white/10 text-white rounded-none">
+                    <SelectItem value="fighters" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">Fighters</SelectItem>
+                    <SelectItem value="events" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">Events</SelectItem>
+                    <SelectItem value="history" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">History</SelectItem>
+                    <SelectItem value="rules" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer">Rules</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="url">URL</Label>
-                <Input id="url" type="url" placeholder="https://en.wikipedia.org/wiki/..." value={url} onChange={(e) => setUrl(e.target.value)} required />
+              <div className="space-y-3">
+                <Label htmlFor="url" className="text-xs font-bold uppercase tracking-widest text-zinc-500">URL / Topic</Label>
+                <Input id="url" placeholder="https://ufcstats.com/... or Topic Name" value={url} onChange={(e) => setUrl(e.target.value)} required className="bg-zinc-900 border-white/10 text-white h-12 focus-visible:ring-red-600 rounded-none placeholder:text-zinc-600" />
               </div>
-              <Button type="submit" disabled={!url} variant="secondary" className="w-full">Scrape & Process</Button>
+
+              {scrapeStatus ? (
+                <div className="p-4 bg-zinc-900 border border-white/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Status</span>
+                    <span className="text-xs font-bold uppercase tracking-widest text-red-500 animate-pulse">{scrapeStatus}</span>
+                  </div>
+                </div>
+              ) : (
+                <Button type="submit" disabled={!url} className="w-full bg-white text-black hover:bg-zinc-200 h-12 font-bold uppercase tracking-wider rounded-none">Scrape & Process</Button>
+              )}
             </form>
           </CardContent>
         </Card>
@@ -157,7 +190,7 @@ export default function AdminPage() {
             <CardTitle>Ingested Documents</CardTitle>
             <CardDescription>Vectorized chunks ready for RAG and Quiz generation.</CardDescription>
           </div>
-          <Button variant="outline" size="icon" onClick={loadDocuments} disabled={loading}>
+          <Button variant="outline" size="icon" onClick={() => loadDocuments()} disabled={loading}>
             <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </CardHeader>

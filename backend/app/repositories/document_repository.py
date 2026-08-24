@@ -1,17 +1,19 @@
 import uuid
+from collections.abc import Sequence
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Document
+from app.repositories.base_repository import BaseRepository
 
 
-class DocumentRepository:
+class DocumentRepository(BaseRepository[Document]):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(Document, session)
 
     async def get_document(self, document_id: uuid.UUID) -> Document | None:
-        return await self.session.get(Document, document_id)
+        return await self.get_by_id(document_id)
 
     async def get_documents(
         self,
@@ -19,7 +21,7 @@ class DocumentRepository:
         source_type: str | None = None,
         page: int = 1,
         page_size: int = 20,
-    ) -> tuple[list[Document], int]:
+    ) -> tuple[Sequence[Document], int]:
         base_stmt = select(Document).where(Document.is_active.is_(True))
 
         if category:
@@ -36,8 +38,7 @@ class DocumentRepository:
             .limit(page_size)
         )
         rows = (await self.session.execute(paginated_stmt)).scalars().all()
-        return list(rows), total
+        return rows, total
 
     async def soft_delete(self, doc: Document) -> None:
         doc.is_active = False
-        await self.session.commit()

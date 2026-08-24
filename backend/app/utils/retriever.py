@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 from langchain_core.callbacks import (
     AsyncCallbackManagerForRetrieverRun,
     CallbackManagerForRetrieverRun,
@@ -9,11 +7,11 @@ from langchain_core.callbacks import (
 from langchain_core.documents import Document as LCDocument
 from langchain_core.retrievers import BaseRetriever
 from pydantic import ConfigDict
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
-from app.ingestion.embedder import Embedder
-from app.rag.vectorstore import similarity_search
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.utils.embedder import Embedder
+from app.utils.vectorstore import similarity_search
 
 log = get_logger(__name__)
 

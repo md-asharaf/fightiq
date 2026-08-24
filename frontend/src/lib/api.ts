@@ -105,3 +105,57 @@ export async function streamChat(
     callbacks.onError(error instanceof Error ? error : new Error(String(error)));
   }
 }
+
+export interface StreamScrapeCallbacks {
+  onProgress: (status: string, data: unknown) => void;
+  onError: (error: Error) => void;
+  onComplete: () => void;
+}
+
+export async function streamScrape(
+  topics: string[],
+  category: string,
+  callbacks: StreamScrapeCallbacks
+) {
+  const url = `${API_BASE_URL}/ingest/scrape`;
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topics, category }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to connect to scrape API");
+    }
+    if (!response.body) {
+      throw new Error("No response body");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split("\n");
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const dataStr = line.replace("data: ", "").trim();
+          try {
+            const data = JSON.parse(dataStr);
+            callbacks.onProgress(data.status, data);
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+    callbacks.onComplete();
+  } catch (error) {
+    callbacks.onError(error instanceof Error ? error : new Error(String(error)));
+  }
+}

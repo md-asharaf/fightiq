@@ -1,23 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { MessageProps } from "@/components/chat/ChatMessage";
 import { streamChat } from "@/lib/api";
 
 const generateSessionId = () => `sess_${Math.random().toString(36).substr(2, 9)}`;
 
 export function useChat() {
-  const [messages, setMessages] = useState<MessageProps[]>([]);
+  const [messages, setMessages] = useState<MessageProps[]>([
+    { role: "assistant", content: "Welcome to FightIQ! Ask me anything about UFC fighters, events, history, or rules." }
+  ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState("");
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSessionId(generateSessionId());
-
-    setMessages([
-      { role: "assistant", content: "Welcome to FightIQ! Ask me anything about UFC fighters, events, history, or rules." }
-    ]);
-  }, []);
+  const [sessionId, setSessionId] = useState(generateSessionId);
 
   const handleClear = () => {
     setSessionId(generateSessionId());

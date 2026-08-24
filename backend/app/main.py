@@ -1,21 +1,20 @@
 from __future__ import annotations
 
+import traceback
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from app.core.logging import configure_logging
+from app.core.database import engine
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from app.core.config import settings
+from app.core.exceptions import ResourceNotFoundError, ValidationError
+from app.core.logging import configure_logging, get_logger
 
 configure_logging()
-
-from app.core.logging import get_logger  # noqa: E402
-
 log = get_logger(__name__)
-
-from fastapi import FastAPI  # noqa: E402
-from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
-
-from app.core.config import settings  # noqa: E402
-from app.db.session import engine  # noqa: E402
 
 
 @asynccontextmanager
@@ -24,13 +23,13 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     log.info("FightIQ backend starting up", environment=settings.environment)
 
     from app.core.dependencies import set_embedder
-    from app.ingestion.embedder import Embedder
+    from app.utils.embedder import Embedder
 
     embedder = Embedder()
     set_embedder(embedder)
 
     from app.db.session import AsyncSessionLocal
-    from app.ingestion.seed import seed_knowledge_base
+    from app.services.seed_service import seed_knowledge_base
 
     async with AsyncSessionLocal() as session:
         counts = await seed_knowledge_base(session=session, embedder=embedder, force=False)
@@ -62,6 +61,28 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
+
+
+@app.exception_handler(ResourceNotFoundError)
+async def resource_not_found_handler(request: Request, exc: ResourceNotFoundError):
+    return JSONResponse(
+        status_code=404,
+        content={"detail": exc.message}
+    )
+
+@app.exception_handler(ValidationError)
+async def validation_error_handler(request: Request, exc: ValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.message}
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "traceback": traceback.format_exc()}
+    )
 
 app.add_middleware(
     CORSMiddleware,

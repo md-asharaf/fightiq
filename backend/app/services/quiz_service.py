@@ -1,22 +1,26 @@
+from langchain_core.language_models import BaseChatModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ingestion.embedder import Embedder
-from app.quiz.evaluator import evaluate_quiz
-from app.quiz.generator import generate_quiz
-from app.repositories.quiz_repository import QuizRepository
+from app.core.interfaces import IQuizRepository
+from app.core.exceptions import ResourceNotFoundError
 from app.schemas.quiz import QuizGenerateRequest, QuizSubmitRequest
+from app.utils.embedder import Embedder
+from app.utils.quiz_evaluator import evaluate_quiz
+from app.utils.quiz_generator import generate_quiz
 
 
 class QuizService:
-    def __init__(self, quiz_repository: QuizRepository, db: AsyncSession, embedder: Embedder):
+    def __init__(self, quiz_repository: IQuizRepository, db: AsyncSession, embedder: Embedder, llm: BaseChatModel):
         self.repo = quiz_repository
         self.db = db
         self.embedder = embedder
+        self.llm = llm
 
     async def generate_quiz(self, request: QuizGenerateRequest):
         generated_data = await generate_quiz(
             session=self.db,
             embedder=self.embedder,
+            llm=self.llm,
             topic=request.topic,
             difficulty=request.difficulty,
             num_questions=request.num_questions,
@@ -24,17 +28,31 @@ class QuizService:
             fighter=request.fighter,
         )
 
-        return await self.repo.create_session(
+        quiz_session = await self.repo.create_session(
             topic=generated_data.topic,
             category=request.category,
             difficulty=generated_data.difficulty,
             questions=[q.model_dump() for q in generated_data.questions],
         )
+        await self.db.commit()
+        return quiz_session
 
     async def evaluate_quiz(self, request: QuizSubmitRequest):
-        # NOTE: evaluate_quiz directly uses db right now,
-        # it could be refactored to use QuizRepository in the future
-        return await evaluate_quiz(self.db, request)
+        res = await evaluate_quiz(self.db, request)
+        await self.db.commit()
+        return res
 
     async def get_sessions(self, skip: int = 0, limit: int = 20):
         return await self.repo.get_sessions(skip=skip, limit=limit)
+
+    async def get_session(self, session_id):
+        session = await self.repo.get_session(session_id)
+        if not session:
+            raise ResourceNotFoundError(f"Quiz session '{session_id}' not found")
+        return session
+
+    async def get_result(self, session_id):
+        result = await self.repo.get_result(session_id)
+        if not result:
+            raise ResourceNotFoundError(f"Quiz result for session '{session_id}' not found")
+        return result

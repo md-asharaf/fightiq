@@ -1,65 +1,69 @@
-import { useState, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi } from "@/lib/api";
 import { QuizSession, QuizResult } from "@/types";
 
 export function useQuizList() {
-  const [sessions, setSessions] = useState<QuizSession[]>([]);
+  const queryClient = useQueryClient();
 
-  const loadSessions = useCallback(async () => {
-    try {
-      const data = await fetchApi("/quiz/sessions");
-      setSessions(data);
-    } catch (error) {
-      console.error(error);
-    }
-  }, []);
+  const { data: sessions = [] } = useQuery<QuizSession[]>({
+    queryKey: ["quiz-sessions"],
+    queryFn: () => fetchApi("/quiz/sessions"),
+  });
 
-  const generateQuiz = async (topic: string, difficulty: string): Promise<string> => {
-    const response = await fetchApi("/quiz/generate", {
-      method: "POST",
-      body: JSON.stringify({ topic, difficulty, num_questions: 5 }),
-    });
-    return response.id;
+  const generateMutation = useMutation({
+    mutationFn: async ({ topic, difficulty }: { topic: string; difficulty: string }) => {
+      const response = await fetchApi("/quiz/generate", {
+        method: "POST",
+        body: JSON.stringify({ topic, difficulty, num_questions: 5 }),
+      });
+      return response.id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quiz-sessions"] });
+    },
+  });
+
+  return {
+    sessions,
+    loadSessions: () => queryClient.invalidateQueries({ queryKey: ["quiz-sessions"] }),
+    generateQuiz: (topic: string, difficulty: string) => generateMutation.mutateAsync({ topic, difficulty }),
   };
-
-  return { sessions, loadSessions, generateQuiz };
 }
 
 export function useQuizSession(sessionId: string) {
-  const [session, setSession] = useState<QuizSession | null>(null);
-  const [result, setResult] = useState<QuizResult | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const loadQuiz = useCallback(async () => {
-    if (!sessionId) return;
-    setLoading(true);
-    try {
-      const data = await fetchApi(`/quiz/sessions/${sessionId}`);
-      setSession(data);
-      if (data.status === "completed") {
-        const resData = await fetchApi(`/quiz/evaluate/${sessionId}`, { 
-          method: "POST", 
-          body: JSON.stringify({ answers: {} }) 
-        });
-        setResult(resData);
-      }
-    } catch (error) {
-      console.error(error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  }, [sessionId]);
+  const { data: session, isLoading: sessionLoading, refetch: refetchSession } = useQuery<QuizSession>({
+    queryKey: ["quiz-session", sessionId],
+    queryFn: () => fetchApi(`/quiz/sessions/${sessionId}`),
+    enabled: !!sessionId,
+  });
 
-  const submitQuiz = async (answers: Record<string, string>) => {
-    if (!session) return;
-    const resData = await fetchApi(`/quiz/evaluate/${session.id}`, {
-      method: "POST",
-      body: JSON.stringify({ answers }),
-    });
-    setResult(resData);
-    setSession({ ...session, status: "completed" });
+  const { data: result, isLoading: resultLoading } = useQuery<QuizResult>({
+    queryKey: ["quiz-result", sessionId],
+    queryFn: () => fetchApi(`/quiz/results/${sessionId}`),
+    enabled: !!session && session.status === "completed",
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: async (answers: Record<string, string>) => {
+      if (!session) throw new Error("No session");
+      return fetchApi(`/quiz/submit`, {
+        method: "POST",
+        body: JSON.stringify({ session_id: session.id, answers }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quiz-session", sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["quiz-result", sessionId] });
+    },
+  });
+
+  return {
+    session,
+    result,
+    loading: sessionLoading || (session?.status === "completed" && resultLoading),
+    loadQuiz: refetchSession,
+    submitQuiz: submitMutation.mutateAsync,
   };
-
-  return { session, result, loading, loadQuiz, submitQuiz };
 }

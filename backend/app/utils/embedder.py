@@ -11,24 +11,20 @@ log = get_logger(__name__)
 
 
 class Embedder:
-    """Wraps GoogleGenerativeAIEmbeddings for both batch and single-query embedding.
-
-    This class is instantiated once at startup (singleton via dependencies.py)
-    and injected into ingestion and RAG routes.
-
-    Model: text-embedding-004 (768 dimensions, Google's best general embedding).
-    """
+    """Wraps GoogleGenerativeAIEmbeddings for both batch and single-query embedding."""
 
     def __init__(self) -> None:
         self._model = GoogleGenerativeAIEmbeddings(
             model=settings.embedding_model,
             google_api_key=settings.google_api_key,
             task_type="retrieval_document",  # optimal for document indexing
+            output_dimensionality=settings.embedding_dimensions,
         )  # type: ignore[call-arg]
         self._query_model = GoogleGenerativeAIEmbeddings(
             model=settings.embedding_model,
             google_api_key=settings.google_api_key,
             task_type="retrieval_query",  # optimal for query embedding
+            output_dimensionality=settings.embedding_dimensions,
         )  # type: ignore[call-arg]
         log.info(
             "Embedder initialised",

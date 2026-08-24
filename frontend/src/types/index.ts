@@ -7,11 +7,16 @@ export interface Document {
   created_at: string;
 }
 
+export interface QuizOption {
+  id: string;
+  text: string;
+}
+
 export interface QuizQuestion {
   id: string;
-  session_id: string;
-  question_text: string;
-  choices: string[];
+  text: string;
+  options: QuizOption[];
+  sources?: string[];
 }
 
 export interface QuizSession {
@@ -25,18 +30,18 @@ export interface QuizSession {
 
 export interface QuizEvaluation {
   question_id: string;
-  user_answer: string;
-  correct_answer: string;
-  score: number;
+  is_correct: boolean;
+  selected_option_id: string | null;
+  correct_option_id: string;
   explanation: string;
 }
 
 export interface QuizResult {
   session_id: string;
-  evaluations: QuizEvaluation[];
-  total_score: number;
-  max_score: number;
-  created_at: string;
+  score: number;
+  total_questions: number;
+  score_percentage: number;
+  results: QuizEvaluation[];
 }
 
 export interface EvalMetrics {
@@ -55,6 +60,8 @@ export interface EvalRun {
 export interface ChatSource {
   source_id: string;
   title: string;
+  source?: string;
+  category?: string;
 }
 
 export interface ChatMessageData {

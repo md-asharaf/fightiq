@@ -1,12 +1,10 @@
+from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI
-from pydantic import SecretStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
-from app.ingestion.embedder import Embedder
-from app.rag.retriever import UFCRetriever
 from app.schemas.quiz import QuizGeneratedData
+from app.utils.embedder import Embedder
+from app.utils.retriever import UFCRetriever
 
 QUIZ_SYSTEM_PROMPT = """You are FightIQ, an expert MMA quiz generator.
 Your task is to generate a {difficulty} difficulty multiple-choice quiz about "{topic}".
@@ -32,18 +30,10 @@ QUIZ_PROMPT = ChatPromptTemplate.from_messages(
 )
 
 
-def _get_llm() -> ChatGoogleGenerativeAI:
-    return ChatGoogleGenerativeAI(
-        model=settings.llm_model,
-        google_api_key=SecretStr(settings.google_api_key),
-        temperature=0.4,
-        max_output_tokens=4096,
-    )
-
-
 async def generate_quiz(
     session: AsyncSession,
     embedder: Embedder,
+    llm: BaseChatModel,
     topic: str,
     difficulty: str,
     num_questions: int,
@@ -66,7 +56,6 @@ async def generate_quiz(
         for doc in docs
     )
 
-    llm = _get_llm()
     structured_llm = llm.with_structured_output(QuizGeneratedData)
     chain = QUIZ_PROMPT | structured_llm
 

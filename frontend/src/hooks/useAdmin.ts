@@ -1,54 +1,40 @@
-import { useState, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi, uploadFile } from "@/lib/api";
 import { Document } from "@/types";
 
 export function useAdmin() {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [seeding, setSeeding] = useState(false);
+  const queryClient = useQueryClient();
 
-  const loadDocuments = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await fetchApi("/documents");
-      setDocuments(data);
-    } catch (error) {
-      console.error("Failed to load documents", error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { data: documents = [], isLoading: loading, refetch: loadDocuments } = useQuery<Document[]>({
+    queryKey: ["documents"],
+    queryFn: () => fetchApi("/documents"),
+  });
 
-  const seedData = async (): Promise<void> => {
-    setSeeding(true);
-    try {
-      await fetchApi("/ingest/seed", { method: "POST" });
-      await loadDocuments();
-    } finally {
-      setSeeding(false);
-    }
-  };
+  const seedMutation = useMutation({
+    mutationFn: () => fetchApi("/ingest/seed", { method: "POST" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["documents"] }),
+  });
 
-  const uploadDoc = async (file: File, category: string): Promise<void> => {
-    await uploadFile("/ingest/file", file, { category });
-    await loadDocuments();
-  };
+  const uploadMutation = useMutation({
+    mutationFn: ({ file, category }: { file: File; category: string }) => uploadFile("/ingest/file", file, { category }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["documents"] }),
+  });
 
-  const scrapeUrl = async (url: string, category: string): Promise<void> => {
-    await fetchApi("/ingest/scrape", {
+  const scrapeMutation = useMutation({
+    mutationFn: ({ url, category }: { url: string; category: string }) => fetchApi("/ingest/scrape", {
       method: "POST",
       body: JSON.stringify({ url, category }),
-    });
-    await loadDocuments();
-  };
+    }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["documents"] }),
+  });
 
   return {
     documents,
     loading,
-    seeding,
+    seeding: seedMutation.isPending,
     loadDocuments,
-    seedData,
-    uploadDoc,
-    scrapeUrl,
+    seedData: () => seedMutation.mutateAsync(),
+    uploadDoc: (file: File, category: string) => uploadMutation.mutateAsync({ file, category }),
+    scrapeUrl: (url: string, category: string) => scrapeMutation.mutateAsync({ url, category }),
   };
 }

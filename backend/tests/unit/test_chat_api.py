@@ -26,13 +26,10 @@ async def test_get_chat_history_not_found(client: AsyncClient):
 async def test_delete_chat_history(client: AsyncClient, monkeypatch: MonkeyPatch):
     # Mock generate_chat_response to return a valid result
     async def mock_generate(*args, **kwargs):
-        import uuid
-
-        from app.schemas.chat import ChatResponse
-        return ChatResponse(
-            session_id=kwargs.get("session_id") or str(uuid.uuid4()),
-            message="Mocked AI response",
-        )
+        return {
+            "answer": "Mocked AI response",
+            "sources": []
+        }
     monkeypatch.setattr("app.services.chat_service.generate_chat_response", mock_generate)
 
     # Call the endpoint to create a session first
@@ -56,13 +53,10 @@ async def test_delete_chat_history(client: AsyncClient, monkeypatch: MonkeyPatch
 async def test_get_chat_history_success(client: AsyncClient, monkeypatch: MonkeyPatch):
     # Mock generate_chat_response to return a valid result
     async def mock_generate(*args, **kwargs):
-        import uuid
-
-        from app.schemas.chat import ChatResponse
-        return ChatResponse(
-            session_id=kwargs.get("session_id") or str(uuid.uuid4()),
-            message="Mocked AI response",
-        )
+        return {
+            "answer": "Mocked AI response",
+            "sources": []
+        }
     monkeypatch.setattr("app.services.chat_service.generate_chat_response", mock_generate)
 
     msg_response = await client.post(

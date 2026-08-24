@@ -1,10 +1,3 @@
-"""Ingestion pipeline: load → chunk → embed → store.
-
-This is the core of the RAG system. Every document — whether seeded,
-uploaded, or scraped — passes through this pipeline before it can be
-retrieved for question answering or quiz generation.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -14,9 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.db.models import Chunk, Document
-from app.ingestion.chunker import chunk_text
-from app.ingestion.embedder import Embedder
-from app.ingestion.loader import load_file, load_file_from_path
+from app.utils.document_loader import load_file, load_file_from_path
+from app.utils.embedder import Embedder
+from app.utils.text_chunker import chunk_text
 
 log = get_logger(__name__)
 

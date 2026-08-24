@@ -8,16 +8,13 @@ from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
-_PROJECT_ROOT = _BACKEND_DIR.parent
-
 
 class Settings(BaseSettings):
     """Central application settings — single source of truth for all config."""
 
     model_config = SettingsConfigDict(
         env_file=(
-            str(_BACKEND_DIR / ".env"),
-            str(_PROJECT_ROOT / ".env"),
+            str(_BACKEND_DIR / ".env")
         ),
         env_file_encoding="utf-8",
         extra="ignore",
@@ -28,18 +25,17 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     database_url: str
-
     google_api_key: str
-    llm_model: str = "gemini-2.0-flash"
-    embedding_model: str = "models/text-embedding-004"
+    llm_model: str = "gemini-1.5-flash"
+    exa_api_key: str = ""
+    embedding_model: str = "models/gemini-embedding-2"
     embedding_dimensions: int = 768
 
     chunk_size: int = 800
     chunk_overlap: int = 120
 
     backend_cors_origins: list[str] = [
-        "http://localhost:3000",
-        "http://localhost:3001",
+        "http://localhost:3000"
     ]
 
     @field_validator("backend_cors_origins", mode="before")
