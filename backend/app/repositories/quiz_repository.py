@@ -13,8 +13,9 @@ class QuizRepository(BaseRepository[QuizSession]):
     def __init__(self, session: AsyncSession):
         super().__init__(QuizSession, session)
 
-    async def create_session(self, topic: str, category: str | None, difficulty: str, questions: list) -> QuizSession:
+    async def create_session(self, topic: str, category: str | None, difficulty: str, questions: list, user_id: str | None = None) -> QuizSession:
         quiz_session = QuizSession(
+            user_id=user_id,
             topic=topic,
             category=category,
             difficulty=difficulty,
@@ -28,8 +29,11 @@ class QuizRepository(BaseRepository[QuizSession]):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_sessions(self, skip: int = 0, limit: int = 20) -> Sequence[QuizSession]:
-        stmt = select(QuizSession).options(selectinload(QuizSession.results)).order_by(desc(QuizSession.created_at)).offset(skip).limit(limit)
+    async def get_sessions(self, skip: int = 0, limit: int = 20, user_id: str | None = None) -> Sequence[QuizSession]:
+        stmt = select(QuizSession).options(selectinload(QuizSession.results)).order_by(desc(QuizSession.created_at))
+        if user_id:
+            stmt = stmt.where(QuizSession.user_id == user_id)
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.session.execute(stmt)
         return result.scalars().all()
 

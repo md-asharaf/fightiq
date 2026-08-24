@@ -28,9 +28,6 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     embedder = Embedder()
     set_embedder(embedder)
 
-    # Seeding has been moved to a separate script (app.scripts.seed)
-    # to avoid running it on every application startup.
-
     log.info("FightIQ backend ready to serve requests")
     yield
 

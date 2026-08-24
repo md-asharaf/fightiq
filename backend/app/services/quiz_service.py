@@ -20,7 +20,7 @@ class QuizService:
         self.embedder = embedder
         self.llm = llm
 
-    async def generate_quiz(self, request: QuizGenerateRequest):
+    async def generate_quiz(self, request: QuizGenerateRequest, user_id: str | None = None):
         query_embedding = await self.embedder.aembed_query(request.topic)
         chunks_with_scores = await self.chunk_repo.similarity_search_with_scores(
             query_embedding=query_embedding,
@@ -47,12 +47,13 @@ class QuizService:
             category=request.category,
             difficulty=generated_data.difficulty,
             questions=[q.model_dump() for q in generated_data.questions],
+            user_id=user_id,
         )
         await self.repo.commit()
         return quiz_session
 
-    async def evaluate_quiz(self, request: QuizSubmitRequest):
-        quiz_session = await self.get_session(request.session_id)
+    async def evaluate_quiz(self, request: QuizSubmitRequest, user_id: str | None = None):
+        quiz_session = await self.get_session(request.session_id, user_id=user_id)
 
         quiz_result_db, response = evaluate_quiz(quiz_session, request)
 
@@ -60,12 +61,14 @@ class QuizService:
         await self.repo.commit()
         return response
 
-    async def get_sessions(self, skip: int = 0, limit: int = 20):
-        return await self.repo.get_sessions(skip=skip, limit=limit)
+    async def get_sessions(self, skip: int = 0, limit: int = 20, user_id: str | None = None):
+        return await self.repo.get_sessions(skip=skip, limit=limit, user_id=user_id)
 
-    async def get_session(self, session_id):
+    async def get_session(self, session_id, user_id: str | None = None):
         session = await self.repo.get_session(session_id)
         if not session:
+            raise ResourceNotFoundError(f"Quiz session '{session_id}' not found")
+        if session.user_id and session.user_id != user_id:
             raise ResourceNotFoundError(f"Quiz session '{session_id}' not found")
         return session
 
@@ -75,8 +78,8 @@ class QuizService:
             raise ResourceNotFoundError(f"Quiz result for session '{session_id}' not found")
         return result
 
-    async def get_detailed_result(self, session_id) -> QuizSubmitResponse:
-        session = await self.get_session(session_id)
+    async def get_detailed_result(self, session_id, user_id: str | None = None) -> QuizSubmitResponse:
+        session = await self.get_session(session_id, user_id=user_id)
         result_db = await self.get_result(session_id)
 
         questions = session.questions

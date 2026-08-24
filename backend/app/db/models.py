@@ -98,6 +98,9 @@ class QuizSession(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
     )
+    user_id: Mapped[str | None] = mapped_column(
+        String(255), ForeignKey("user.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     topic: Mapped[str] = mapped_column(String(300), nullable=False)
     category: Mapped[str | None] = mapped_column(String(100), nullable=True)
     difficulty: Mapped[str] = mapped_column(

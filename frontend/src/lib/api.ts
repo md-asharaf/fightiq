@@ -1,7 +1,6 @@
 import { ChatSource } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-
+const API_BASE_URL = "/api";
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   const response = await fetch(url, {
@@ -96,7 +95,7 @@ export async function streamChat(
             continue;
           }
           if (!dataStr) continue;
-          
+
           try {
             const data = JSON.parse(dataStr);
             if (data.type === "chunk") {
@@ -195,7 +194,7 @@ export async function deleteSession(sessionId: string) {
     try {
       const errorData = await response.json();
       if (errorData.detail) errorMsg = errorData.detail;
-    } catch {}
+    } catch { }
     throw new Error(errorMsg);
   }
 }
