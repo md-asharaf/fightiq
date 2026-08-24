@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 class ChatMessage(BaseModel):
     """A single chat message."""
+
     role: str = Field(description="Role of the sender: 'user' or 'assistant'")
     content: str = Field(description="Content of the message")
     sources: list[dict[str, Any]] | None = Field(default=None, description="Sources used for this answer, if any")
@@ -12,6 +13,7 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     """Request to send a message to the chat API."""
+
     session_id: str | None = Field(
         default=None,
         description="Session ID to maintain conversation history. If omitted, a new session is created.",
@@ -26,11 +28,13 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     """Response from a non-streaming chat request."""
+
     session_id: str
     message: ChatMessage
 
 
 class ChatHistory(BaseModel):
     """Response containing conversation history."""
+
     session_id: str
     messages: list[ChatMessage]

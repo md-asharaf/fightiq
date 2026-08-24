@@ -1,5 +1,4 @@
-"""
-Pytest configuration and shared fixtures.
+"""Pytest configuration and shared fixtures.
 
 Ensures the project root .env is loaded before any test module imports
 app code (which creates the Settings singleton at module level).

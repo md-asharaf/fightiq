@@ -29,30 +29,27 @@ def _get_llm(stream: bool = False) -> ChatGoogleGenerativeAI:
 
 
 def create_conversational_rag_chain(
-    retriever: Runnable, stream: bool = False
+    retriever: Runnable, stream: bool = False,
 ) -> Runnable:
     """Create an LCEL chain for conversational RAG."""
     llm = _get_llm(stream=stream)
 
-    # 1. Chain to reformulate the question using history
     history_aware_retriever = create_history_aware_retriever(
-        llm, retriever, CONTEXTUALIZE_Q_PROMPT
+        llm, retriever, CONTEXTUALIZE_Q_PROMPT,
     )
 
-    # 2. Chain to answer the question using retrieved docs
     qa_chain = create_stuff_documents_chain(
         llm,
         QA_PROMPT,
-        document_prompt=None,  # Handled by format_docs
+        document_prompt=None,
         document_variable_name="context",
     )
 
-    # 3. Combine them
     return create_retrieval_chain(history_aware_retriever, qa_chain)
 
 
 def _build_retriever(
-    session: AsyncSession, embedder: Embedder, filters: dict | None
+    session: AsyncSession, embedder: Embedder, filters: dict | None,
 ) -> UFCRetriever:
     category = filters.get("category") if filters else None
     fighter = filters.get("fighter") if filters else None
@@ -83,7 +80,7 @@ async def generate_chat_response(
         {
             "input": message,
             "chat_history": history,
-        }
+        },
     )
 
     docs = result.get("context", [])
@@ -110,9 +107,8 @@ async def stream_chat_response(
     qa = create_stuff_documents_chain(llm, QA_PROMPT)
     chain = create_retrieval_chain(history_aware, qa)
 
-    # We use astream_events to get the retrieved docs early so we can send sources first
     async for event in chain.astream_events(
-        {"input": message, "chat_history": history}, version="v1"
+        {"input": message, "chat_history": history}, version="v1",
     ):
         kind = event["event"]
         if kind == "on_retriever_end":

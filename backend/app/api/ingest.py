@@ -1,5 +1,3 @@
-"""API v1 ingest endpoints — file upload, seed trigger, Wikipedia scraping."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -19,7 +17,7 @@ log = get_logger(__name__)
 router = APIRouter()
 
 _ALLOWED_EXTENSIONS = {".txt", ".md", ".pdf", ".json"}
-_MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+_MAX_FILE_SIZE = 10 * 1024 * 1024
 _VALID_CATEGORIES = {"fighters", "events", "history", "rules", "general"}
 
 
@@ -74,7 +72,6 @@ async def ingest_file(
     db: AsyncSession = Depends(get_db),
     embedder: Embedder = Depends(get_embedder),
 ) -> IngestResponse:
-    # ── Validation ─────────────────────────────────────────────────────────────
     if not file.filename:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -149,7 +146,6 @@ async def ingest_scrape(
 ) -> IngestResponse:
     log.info("Wikipedia scrape requested", topics=request.topics, category=request.category)
 
-    # Scraping is synchronous (blocking) — consider running in executor for prod
     scraped = scrape_topics(request.topics)
 
     if not scraped:

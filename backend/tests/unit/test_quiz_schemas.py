@@ -18,7 +18,7 @@ def test_question_valid():
         options=options,
         correct_option_id="C",
         explanation="Because C is correct.",
-        sources=["Doc 1"]
+        sources=["Doc 1"],
     )
     assert q.correct_option_id == "C"
 

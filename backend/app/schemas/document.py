@@ -10,8 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class DocumentRead(BaseModel):
-    """
-    Response schema for a single Document.
+    """Response schema for a single Document.
 
     Uses a model_validator to bridge the ORM attribute name `metadata_`
     to the public API field name `metadata`, avoiding any naming conflict
@@ -34,8 +33,7 @@ class DocumentRead(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def _normalize_from_orm(cls, data: Any) -> Any:
-        """
-        When instantiated from an ORM object, remap `metadata_` → `metadata`.
+        """When instantiated from an ORM object, remap `metadata_` → `metadata`.
 
         Pydantic's `from_attributes=True` mode accesses attributes by field name.
         Since the ORM column is `metadata_` (to avoid the SQLAlchemy Base.metadata

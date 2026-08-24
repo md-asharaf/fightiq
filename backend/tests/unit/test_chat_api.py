@@ -1,7 +1,7 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.api.v1.chat import _chat_history_metadata, _chat_sessions
+from app.api.chat import _chat_history_metadata, _chat_sessions
 from app.main import app
 from app.schemas.chat import ChatMessage
 
@@ -9,7 +9,7 @@ from app.schemas.chat import ChatMessage
 @pytest.fixture
 async def client():
     async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test",
     ) as c:
         yield c
 
@@ -37,7 +37,7 @@ async def test_delete_chat_history(client: AsyncClient):
     session_id = "test-session"
     _chat_sessions[session_id] = []
     _chat_history_metadata[session_id] = [
-        ChatMessage(role="user", content="Hi")
+        ChatMessage(role="user", content="Hi"),
     ]
 
     response = await client.delete(f"/api/v1/chat/history/{session_id}")
@@ -54,7 +54,7 @@ async def test_get_chat_history_success(client: AsyncClient):
     _chat_sessions[session_id] = []
     _chat_history_metadata[session_id] = [
         ChatMessage(role="user", content="Hi"),
-        ChatMessage(role="assistant", content="Hello!")
+        ChatMessage(role="assistant", content="Hello!"),
     ]
 
     response = await client.get(f"/api/v1/chat/history/{session_id}")

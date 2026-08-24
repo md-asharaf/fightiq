@@ -1,10 +1,13 @@
-"""Top-level API router — mounts all versioned sub-routers."""
-
 from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.v1 import router as v1_router
+from app.api import chat, documents, eval, ingest, quiz
 
-api_router = APIRouter()
-api_router.include_router(v1_router, prefix="/api/v1")
+router = APIRouter()
+
+router.include_router(ingest.router, prefix="/api/ingest", tags=["Ingestion"])
+router.include_router(documents.router, prefix="/api/documents", tags=["Documents"])
+router.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
+router.include_router(quiz.router, prefix="/api/quiz", tags=["Quiz"])
+router.include_router(eval.router, prefix="/api/eval", tags=["Evaluation"])

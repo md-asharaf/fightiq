@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -18,7 +18,7 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   return response.json();
 }
 
-export async function uploadFile(endpoint: string, file: File, metadata: Record<string, any> = {}) {
+export async function uploadFile(endpoint: string, file: File, metadata: Record<string, string> = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   const formData = new FormData();
   formData.append("file", file);

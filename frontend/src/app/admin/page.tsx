@@ -25,8 +25,9 @@ export default function AdminPage() {
   const handleSeed = async () => {
     try {
       await seedData();
-    } catch (error: any) {
-      alert("Failed to seed: " + error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) alert("Failed to seed: " + error.message);
+      else alert("Failed to seed: Unknown error");
     }
   };
 
@@ -37,8 +38,9 @@ export default function AdminPage() {
     try {
       await uploadDoc(file, category);
       setFile(null);
-    } catch (error: any) {
-      alert("Upload failed: " + error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) alert("Upload failed: " + error.message);
+      else alert("Upload failed: Unknown error");
     }
   };
 
@@ -49,8 +51,9 @@ export default function AdminPage() {
     try {
       await scrapeUrl(url, category);
       setUrl("");
-    } catch (error: any) {
-      alert("Scrape failed: " + error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) alert("Scrape failed: " + error.message);
+      else alert("Scrape failed: Unknown error");
     }
   };
 

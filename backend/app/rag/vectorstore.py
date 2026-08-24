@@ -1,12 +1,3 @@
-"""
-Custom pgvector-backed similarity search using SQLAlchemy.
-
-Implements cosine distance search directly against our 'chunks' table,
-giving full control over the query, metadata filtering, and result shaping.
-This avoids driver-compatibility issues from langchain-postgres while
-demonstrating direct pgvector competency.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -28,31 +19,11 @@ async def similarity_search(
     fighter: str | None = None,
     document_ids: list[uuid.UUID] | None = None,
 ) -> list[tuple[Chunk, float]]:
-    """
-    Perform cosine similarity search over the chunks table using pgvector.
-
-    Uses pgvector's <=> operator (cosine distance) via the SQLAlchemy
-    pgvector integration. Results are ordered ascending by distance
-    (lower = more similar).
-
-    Args:
-        session: Async DB session.
-        query_embedding: The query vector (768-dim for text-embedding-004).
-        k: Maximum number of results to return.
-        category: Optional filter — only return chunks from this category.
-        fighter: Optional filter — only return chunks mentioning this fighter
-                 (matched against metadata JSON).
-        document_ids: Optional allowlist of document IDs to search within.
-
-    Returns:
-        List of (Chunk, cosine_distance) tuples, ordered by distance ascending.
-    """
-    # Build the SELECT with computed distance column
+    """Perform cosine similarity search over the chunks table using pgvector."""
     distance_col = Chunk.embedding.cosine_distance(query_embedding).label("distance")
     stmt = select(Chunk, distance_col)
 
-    # ── Metadata filters ──────────────────────────────────────────────────────
-    conditions = [Chunk.embedding.is_not(None)]  # exclude un-embedded chunks
+    conditions = [Chunk.embedding.is_not(None)]
 
     if category:
         conditions.append(Chunk.metadata_["category"].astext == category)
@@ -63,7 +34,6 @@ async def similarity_search(
 
     stmt = stmt.where(and_(*conditions))
 
-    # Order by cosine distance and limit
     stmt = stmt.order_by(distance_col).limit(k)
 
     result = await session.execute(stmt)
@@ -85,12 +55,7 @@ async def similarity_search_with_scores(
     k: int = 5,
     **filter_kwargs,
 ) -> list[dict]:
-    """
-    Convenience wrapper that returns dicts instead of ORM objects.
-
-    Converts cosine distance to a 0–1 similarity score
-    (score = 1 - distance, so 1.0 = identical, 0.0 = orthogonal).
-    """
+    """Convenience wrapper that returns dicts instead of ORM objects."""
     results = await similarity_search(
         session=session,
         query_embedding=query_embedding,

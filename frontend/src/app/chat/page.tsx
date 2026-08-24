@@ -9,8 +9,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { ChatSource } from "@/types";
 
-// We generate a simple session ID on mount for demonstration.
-// In a real app, this would be persisted to localStorage or backend.
 const generateSessionId = () => `sess_${Math.random().toString(36).substr(2, 9)}`;
 
 export default function ChatPage() {
@@ -21,14 +19,15 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSessionId(generateSessionId());
+
     setMessages([
       { role: "assistant", content: "Welcome to FightIQ! Ask me anything about UFC fighters, events, history, or rules." }
     ]);
   }, []);
 
   useEffect(() => {
-    // Auto-scroll to bottom
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
@@ -45,16 +44,14 @@ export default function ChatPage() {
 
     const userMessage = input.trim();
     setInput("");
-    
-    // Add user message to UI immediately
+
     setMessages(prev => [...prev, { role: "user", content: userMessage }]);
     setIsLoading(true);
 
-    // Prepare to stream assistant message
     setMessages(prev => [...prev, { role: "assistant", content: "" }]);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/chat/message`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"}/chat/message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -68,7 +65,7 @@ export default function ChatPage() {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
-      
+
       let fullContent = "";
       let sources: ChatSource[] = [];
 
@@ -83,14 +80,12 @@ export default function ChatPage() {
           if (line.startsWith("data: ")) {
             const dataStr = line.replace("data: ", "").trim();
             if (dataStr === "[DONE]") {
-              // Finalize
               continue;
             }
             try {
               const data = JSON.parse(dataStr);
               if (data.type === "chunk") {
                 fullContent += data.content;
-                // Update last message
                 setMessages(prev => {
                   const newMsgs = [...prev];
                   newMsgs[newMsgs.length - 1].content = fullContent;
@@ -104,17 +99,16 @@ export default function ChatPage() {
                   return newMsgs;
                 });
               }
-            } catch (err) {
-              // Incomplete chunk or parse error
+            } catch {
             }
           }
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
       setMessages(prev => {
         const newMsgs = [...prev];
-        newMsgs[newMsgs.length - 1].content = "⚠️ Sorry, an error occurred while generating the response.";
+        newMsgs[newMsgs.length - 1].content = "Sorry, an error occurred while generating the response.";
         return newMsgs;
       });
     } finally {
@@ -155,10 +149,10 @@ export default function ChatPage() {
 
         <div className="p-4 bg-background border-t border-border/50">
           <form onSubmit={handleSend} className="flex space-x-2">
-            <Input 
-              value={input} 
-              onChange={e => setInput(e.target.value)} 
-              placeholder="Ask about UFC rules, fighters, or history..." 
+            <Input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder="Ask about UFC rules, fighters, or history..."
               disabled={isLoading}
               className="flex-1 bg-muted/50 border-border/50 focus-visible:ring-red-500"
             />

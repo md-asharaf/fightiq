@@ -1,5 +1,3 @@
-"""Document loaders for various file formats (.txt, .md, .pdf, .json)."""
-
 from __future__ import annotations
 
 import io
@@ -11,23 +9,18 @@ from app.core.logging import get_logger
 log = get_logger(__name__)
 
 
-def load_text(content: bytes, filename: str = "") -> str:
+def load_text(content: bytes) -> str:
     """Decode bytes as UTF-8 text (for .txt and .md files)."""
     return content.decode("utf-8", errors="replace")
 
 
 def load_pdf(content: bytes) -> str:
-    """
-    Extract text from a PDF using pypdf.
-
-    Each page is separated by a blank line to preserve semantic boundaries
-    during chunking.
-    """
+    """Extract text from a PDF using pypdf"""
     try:
         from pypdf import PdfReader
     except ImportError as exc:
         raise RuntimeError(
-            "pypdf is not installed. Add 'pypdf>=4.0.0' to dependencies."
+            "pypdf is not installed. Add 'pypdf>=4.0.0' to dependencies.",
         ) from exc
 
     reader = PdfReader(io.BytesIO(content))
@@ -43,12 +36,7 @@ def load_pdf(content: bytes) -> str:
 
 
 def load_json(content: bytes) -> str:
-    """
-    Convert a JSON document to a readable text representation.
-
-    Useful for ingesting structured UFC data (fighter stats, event results, etc.)
-    as plain text for chunking.
-    """
+    """Convert a JSON document to a readable text representation."""
     try:
         data = json.loads(content.decode("utf-8"))
         return json.dumps(data, indent=2, ensure_ascii=False)
@@ -58,25 +46,18 @@ def load_json(content: bytes) -> str:
 
 
 def load_file(content: bytes, filename: str) -> str:
-    """
-    Dispatch to the appropriate loader based on file extension.
-
-    Raises:
-        ValueError: For unsupported extensions after a fallback attempt.
-    """
+    """Dispatch to the appropriate loader based on file extension."""
     ext = Path(filename).suffix.lower()
     log.info("Loading document", filename=filename, extension=ext)
 
     if ext in {".txt", ".md", ".markdown"}:
-        return load_text(content, filename)
-    elif ext == ".pdf":
+        return load_text(content)
+    if ext == ".pdf":
         return load_pdf(content)
-    elif ext == ".json":
+    if ext == ".json":
         return load_json(content)
-    else:
-        # Best-effort: attempt UTF-8 text decode
-        log.warning("Unknown file extension — attempting text decode", filename=filename)
-        return load_text(content, filename)
+    log.warning("Unknown file extension — attempting text decode", filename=filename)
+    return load_text(content)
 
 
 def load_file_from_path(path: Path) -> str:

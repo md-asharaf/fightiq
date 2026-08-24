@@ -26,9 +26,6 @@ class TestSettingsDefaults:
     def test_chunk_overlap_less_than_size(self):
         assert settings.chunk_overlap < settings.chunk_size
 
-    def test_api_prefix(self):
-        assert settings.api_v1_prefix == "/api/v1"
-
     def test_cors_origins_is_list(self):
         assert isinstance(settings.backend_cors_origins, list)
         assert len(settings.backend_cors_origins) > 0

@@ -30,8 +30,9 @@ export default function EvalDashboard() {
   const handleRunEval = async () => {
     try {
       await runEvaluation();
-    } catch (error: any) {
-      alert("Failed to run evaluation: " + error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) alert("Failed to run evaluation: " + error.message);
+      else alert("Failed to run evaluation: Unknown error");
     }
   };
 
@@ -98,7 +99,7 @@ export default function EvalDashboard() {
                 ) : results.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                      No evaluations run yet. Click "Run Evaluation" to test the RAG system.
+                      No evaluations run yet. Click &quot;Run Evaluation&quot; to test the RAG system.
                     </TableCell>
                   </TableRow>
                 ) : (

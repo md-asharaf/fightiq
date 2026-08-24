@@ -26,7 +26,7 @@ app.dependency_overrides[get_embedder] = override_get_embedder
 @pytest.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test",
     ) as c:
         yield c
 
@@ -34,7 +34,7 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
 @pytest.mark.asyncio
 async def test_api_get_eval_results(client: AsyncClient):
     """Test retrieving eval results (should be empty initially)."""
-    response = await client.get("/api/v1/eval/results")
+    response = await client.get("/api/eval/results")
     assert response.status_code == 200
     assert response.json() == []
 
@@ -47,18 +47,18 @@ async def test_api_run_evaluation_mock(client: AsyncClient, monkeypatch: pytest.
     from app.schemas.eval import EvalRunResult
 
     # Mock run_evaluation to avoid real LLM calls and DB calls
-    async def mock_run_evaluation(session, embedder):
+    async def mock_run_evaluation(_session, _embedder):
         return EvalRunResult(
             run_id=str(uuid.uuid4()),
             dataset_name="eval_dataset.json",
             overall_scores={"faithfulness": 0.95},
-            question_results=[]
+            question_results=[],
         )
 
     # Note: since run_evaluation is imported directly in eval.py, we patch it in the target module
-    monkeypatch.setattr("app.api.v1.eval.run_evaluation", mock_run_evaluation)
+    monkeypatch.setattr("app.api.eval.run_evaluation", mock_run_evaluation)
 
-    response = await client.get("/api/v1/eval/run")
+    response = await client.get("/api/eval/run")
     assert response.status_code == 200
     data = response.json()
     assert "run_id" in data

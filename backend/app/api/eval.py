@@ -8,8 +8,6 @@ from app.schemas.eval import EvalRunResult
 
 router = APIRouter()
 
-# In-memory storage for eval results (Phase 4).
-# In a production app, this would be backed by PostgreSQL or a dedicated MLflow/LangSmith server.
 _eval_results: list[EvalRunResult] = []
 
 
@@ -18,8 +16,7 @@ async def api_run_evaluation(
     session: AsyncSession = Depends(get_db),
     embedder: Embedder = Depends(get_embedder),
 ):
-    """
-    Trigger a Ragas evaluation run using the dataset in data/eval/eval_dataset.json.
+    """Trigger a Ragas evaluation run using the dataset in data/eval/eval_dataset.json.
     """
     try:
         result = await run_evaluation(session, embedder)
@@ -28,18 +25,17 @@ async def api_run_evaluation(
     except FileNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
+            detail=str(e),
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Evaluation failed: {str(e)}"
+            detail=f"Evaluation failed: {e!s}",
         )
 
 
 @router.get("/results", response_model=list[EvalRunResult])
 async def api_get_eval_results():
-    """
-    Retrieve past evaluation results.
+    """Retrieve past evaluation results.
     """
     return _eval_results

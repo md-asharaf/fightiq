@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import Link from "next/link";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -20,14 +21,14 @@ export default function RootLayout({
         {/* Navigation Bar */}
         <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center mx-auto px-4 md:px-8">
-            <a href="/" className="mr-8 flex items-center space-x-2">
+            <Link href="/" className="mr-8 flex items-center space-x-2">
               <span className="font-bold text-xl tracking-tight text-gradient">FightIQ</span>
-            </a>
+            </Link>
             <nav className="flex items-center space-x-6 text-sm font-medium ml-auto md:ml-0">
-              <a href="/chat" className="transition-colors hover:text-primary text-foreground/80">Chat</a>
-              <a href="/quiz" className="transition-colors hover:text-primary text-foreground/80">Quiz</a>
-              <a href="/admin" className="transition-colors hover:text-primary text-foreground/80">Admin</a>
-              <a href="/eval" className="transition-colors hover:text-primary text-foreground/80">Eval</a>
+              <Link href="/chat" className="transition-colors hover:text-primary text-foreground/80">Chat</Link>
+              <Link href="/quiz" className="transition-colors hover:text-primary text-foreground/80">Quiz</Link>
+              <Link href="/admin" className="transition-colors hover:text-primary text-foreground/80">Admin</Link>
+              <Link href="/eval" className="transition-colors hover:text-primary text-foreground/80">Eval</Link>
             </nav>
           </div>
         </header>

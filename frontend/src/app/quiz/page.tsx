@@ -32,8 +32,9 @@ export default function QuizConfigPage() {
     try {
       const sessionId = await generateQuiz(topic, difficulty);
       router.push(`/quiz/${sessionId}`);
-    } catch (error: any) {
-      alert("Failed to generate quiz: " + error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) alert("Failed to generate quiz: " + error.message);
+      else alert("Failed to generate quiz: Unknown error");
       setLoading(false);
     }
   };

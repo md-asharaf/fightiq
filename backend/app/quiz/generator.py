@@ -28,7 +28,7 @@ QUIZ_PROMPT = ChatPromptTemplate.from_messages(
     [
         ("system", QUIZ_SYSTEM_PROMPT),
         ("user", "Please generate the quiz now in the requested structured format."),
-    ]
+    ],
 )
 
 
@@ -36,7 +36,7 @@ def _get_llm() -> ChatGoogleGenerativeAI:
     return ChatGoogleGenerativeAI(
         model=settings.llm_model,
         google_api_key=SecretStr(settings.google_api_key),
-        temperature=0.4,  # slightly higher for varied questions, but still constrained
+        temperature=0.4,
         max_output_tokens=4096,
     )
 
@@ -50,39 +50,34 @@ async def generate_quiz(
     category: str | None = None,
     fighter: str | None = None,
 ) -> QuizGeneratedData:
+    """Retrieve relevant documents for the topic, then generate a structured quiz.
     """
-    Retrieve relevant documents for the topic, then generate a structured quiz.
-    """
-    # 1. Retrieve context
     retriever = UFCRetriever(
         session=session,
         embedder=embedder,
         category=category,
         fighter=fighter,
-        k=10,  # retrieve more chunks to ensure enough info for a quiz
+        k=10,
     )
     docs = await retriever.ainvoke(topic)
 
-    # 2. Format context
     context_str = "\n\n".join(
         f"Document Title: {doc.metadata.get('title', 'Unknown')}\n{doc.page_content}"
         for doc in docs
     )
 
-    # 3. Build chain with structured output
     llm = _get_llm()
     structured_llm = llm.with_structured_output(QuizGeneratedData)
     chain = QUIZ_PROMPT | structured_llm
 
-    # 4. Generate
     result = await chain.ainvoke(
         {
             "topic": topic,
             "difficulty": difficulty,
             "num_questions": num_questions,
             "context": context_str,
-        }
+        },
     )
 
     from typing import cast
-    return cast(QuizGeneratedData, result)
+    return cast("QuizGeneratedData", result)

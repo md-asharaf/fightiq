@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { MessageSquare, BrainCircuit, ShieldCheck, Database } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default function HomePage() {

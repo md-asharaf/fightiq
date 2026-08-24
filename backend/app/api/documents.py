@@ -59,11 +59,9 @@ async def list_documents(
             )
         base_stmt = base_stmt.where(Document.source_type == source_type)
 
-    # Total count (without pagination)
     count_stmt = select(func.count()).select_from(base_stmt.subquery())
     total = (await db.execute(count_stmt)).scalar_one()
 
-    # Paginated results
     paginated_stmt = (
         base_stmt.order_by(Document.created_at.desc())
         .offset((page - 1) * page_size)

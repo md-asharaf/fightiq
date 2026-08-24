@@ -21,8 +21,9 @@ export default function QuizSessionPage() {
     setEvaluating(true);
     try {
       await submitQuiz(answers);
-    } catch (error: any) {
-      alert("Failed to evaluate quiz: " + error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) alert("Failed to evaluate quiz: " + error.message);
+      else alert("Failed to evaluate quiz: Unknown error");
     } finally {
       setEvaluating(false);
     }

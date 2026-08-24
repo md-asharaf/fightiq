@@ -24,8 +24,7 @@ async def api_generate_quiz(
     session: AsyncSession = Depends(get_db),
     embedder: Embedder = Depends(get_embedder),
 ):
-    """
-    Generate a new quiz based on a topic and save the session to the DB.
+    """Generate a new quiz based on a topic and save the session to the DB.
     """
     try:
         generated_data = await generate_quiz(
@@ -40,16 +39,14 @@ async def api_generate_quiz(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate quiz: {str(e)}"
+            detail=f"Failed to generate quiz: {e!s}",
         )
 
-    # Save to DB
     quiz_session = QuizSession(
         topic=generated_data.topic,
         category=request.category,
         difficulty=generated_data.difficulty,
         num_questions=len(generated_data.questions),
-        # Pydantic v2: model_dump()
         questions=[q.model_dump() for q in generated_data.questions],
     )
     session.add(quiz_session)
@@ -64,21 +61,19 @@ async def api_submit_quiz(
     request: QuizSubmitRequest,
     session: AsyncSession = Depends(get_db),
 ):
-    """
-    Submit answers for a quiz session and get the graded results.
-    """
+    """Submit answers for a quiz session and get the graded results."""
     try:
         response = await evaluate_quiz(session, request)
         return response
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
+            detail=str(e),
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to evaluate quiz: {str(e)}"
+            detail=f"Failed to evaluate quiz: {e!s}",
         )
 
 
@@ -88,9 +83,7 @@ async def api_list_quiz_sessions(
     limit: int = 20,
     session: AsyncSession = Depends(get_db),
 ):
-    """
-    List past quiz sessions (without answers).
-    """
+    """List past quiz sessions (without answers)."""
     stmt = select(QuizSession).order_by(desc(QuizSession.created_at)).offset(skip).limit(limit)
     result = await session.execute(stmt)
     sessions = result.scalars().all()

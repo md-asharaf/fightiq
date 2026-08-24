@@ -82,7 +82,7 @@ class TestLoadFile:
 
     def test_pdf_import_error_handled(self):
         """PDF loading should raise RuntimeError if pypdf not installed (mocked)."""
-        import unittest.mock as mock
+        from unittest import mock
         with mock.patch.dict("sys.modules", {"pypdf": None}):
             # pypdf is installed in our env, but we verify the error path exists
             # by just calling the function — it will succeed normally

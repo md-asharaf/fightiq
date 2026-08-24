@@ -1,5 +1,3 @@
-"""Structured logging configuration using structlog."""
-
 from __future__ import annotations
 
 import logging
@@ -53,7 +51,6 @@ def configure_logging() -> None:
     root_logger.handlers = [handler]
     root_logger.setLevel(settings.log_level.upper())
 
-    # Silence noisy third-party loggers
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)

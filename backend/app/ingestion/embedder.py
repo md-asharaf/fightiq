@@ -11,8 +11,7 @@ log = get_logger(__name__)
 
 
 class Embedder:
-    """
-    Wraps GoogleGenerativeAIEmbeddings for both batch and single-query embedding.
+    """Wraps GoogleGenerativeAIEmbeddings for both batch and single-query embedding.
 
     This class is instantiated once at startup (singleton via dependencies.py)
     and injected into ingestion and RAG routes.

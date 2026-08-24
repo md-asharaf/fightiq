@@ -1,5 +1,3 @@
-"""SQLAlchemy async engine and session factory."""
-
 from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -15,7 +13,7 @@ class Base(DeclarativeBase):
 engine = create_async_engine(
     settings.database_url,
     echo=settings.environment == "development",
-    pool_pre_ping=True,   # test connections on checkout
+    pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,
 )
@@ -23,7 +21,7 @@ engine = create_async_engine(
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
-    expire_on_commit=False,  # avoid lazy-loading errors after commit
+    expire_on_commit=False,
     autocommit=False,
     autoflush=False,
 )

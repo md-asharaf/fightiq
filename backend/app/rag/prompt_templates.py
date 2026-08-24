@@ -19,10 +19,9 @@ QA_PROMPT = ChatPromptTemplate.from_messages(
         ("system", SYSTEM_PROMPT),
         MessagesPlaceholder(variable_name="chat_history"),
         ("user", "{input}"),
-    ]
+    ],
 )
 
-# Prompt for rephrasing the user's question to be standalone (for conversation history context)
 CONTEXTUALIZE_Q_SYSTEM_PROMPT = """Given a chat history and the latest user question \
 which might reference context in the chat history, formulate a standalone question \
 which can be understood without the chat history. Do NOT answer the question, \
@@ -33,5 +32,5 @@ CONTEXTUALIZE_Q_PROMPT = ChatPromptTemplate.from_messages(
         ("system", CONTEXTUALIZE_Q_SYSTEM_PROMPT),
         MessagesPlaceholder(variable_name="chat_history"),
         ("user", "{input}"),
-    ]
+    ],
 )

@@ -1,5 +1,4 @@
-"""
-Wikipedia scraper for UFC knowledge documents.
+"""Wikipedia scraper for UFC knowledge documents.
 
 Fetches article content via the Wikipedia REST API and scrapes
 full page text via HTML parsing. Includes politeness delays
@@ -21,10 +20,10 @@ log = get_logger(__name__)
 _SUMMARY_API = "https://en.wikipedia.org/api/rest_v1/page/summary/{}"
 _WIKI_BASE = "https://en.wikipedia.org/wiki/{}"
 _HEADERS = {
-    "User-Agent": "FightIQ/1.0 (portfolio RAG project; educational use; contact: dev@fightiq.local)"
+    "User-Agent": "FightIQ/1.0 (portfolio RAG project; educational use; contact: dev@fightiq.local)",
 }
-_REQUEST_DELAY = 1.5   # seconds between HTTP requests
-_REQUEST_TIMEOUT = 15  # seconds
+_REQUEST_DELAY = 1.5
+_REQUEST_TIMEOUT = 15
 
 
 def _url_encode(topic: str) -> str:
@@ -43,7 +42,6 @@ def _fetch_summary(topic: str) -> dict | None:
         log.warning(
             "Wikipedia summary HTTP error",
             topic=topic,
-            # exc.response is Optional[Response] — guard against None
             status=getattr(exc.response, "status_code", "unknown"),
         )
         return None
@@ -53,12 +51,7 @@ def _fetch_summary(topic: str) -> dict | None:
 
 
 def _fetch_full_text(topic: str) -> str | None:
-    """
-    Fetch and extract plain-text paragraphs from a Wikipedia article page.
-
-    Strips navigation boxes, infoboxes, references, and other non-content elements
-    to produce clean prose text suitable for chunking and embedding.
-    """
+    """Fetch and extract plain-text paragraphs from a Wikipedia article page."""
     url = _WIKI_BASE.format(_url_encode(topic))
     try:
         resp = requests.get(url, headers=_HEADERS, timeout=_REQUEST_TIMEOUT)
@@ -67,7 +60,6 @@ def _fetch_full_text(topic: str) -> str | None:
         log.warning(
             "Wikipedia page HTTP error",
             topic=topic,
-            # exc.response is Optional[Response] — guard against None
             status=getattr(exc.response, "status_code", "unknown"),
         )
         return None
@@ -77,12 +69,11 @@ def _fetch_full_text(topic: str) -> str | None:
 
     soup = BeautifulSoup(resp.text, "html.parser")
 
-    # Remove non-content elements
     for tag in soup.select(
         ".infobox, .navbox, .vertical-navbox, .ambox, .dmbox, "
         ".references, .reflist, .refbegin, .mw-editsection, "
         ".toc, .hatnote, .sistersitebox, .portal-bar, "
-        "script, style, [class*='sidebar'], sup.reference"
+        "script, style, [class*='sidebar'], sup.reference",
     ):
         tag.decompose()
 
@@ -93,11 +84,9 @@ def _fetch_full_text(topic: str) -> str | None:
 
     paragraphs: list[str] = []
     for element in content_div.children:
-        # Include paragraph and heading text
         if hasattr(element, "name"):
             if element.name == "p":
                 text = element.get_text(separator=" ").strip()
-                # Filter out very short/stub paragraphs
                 if len(text) > 60:
                     paragraphs.append(text)
             elif element.name in {"h2", "h3"}:
@@ -109,20 +98,12 @@ def _fetch_full_text(topic: str) -> str | None:
 
 
 def scrape_topic(topic: str) -> dict | None:
-    """
-    Scrape a Wikipedia topic and return its title, content, and URL.
-
-    Returns None if the page cannot be found or scraped.
-    Content combines the REST API summary with full article text
-    to provide maximum context for the RAG system.
-    """
+    """Scrape a Wikipedia topic and return its title, content, and URL."""
     log.info("Scraping Wikipedia topic", topic=topic)
 
-    # 1. Fetch summary (fast, JSON)
     summary_data = _fetch_summary(topic)
     time.sleep(_REQUEST_DELAY)
 
-    # 2. Fetch full page text (HTML parse)
     full_text = _fetch_full_text(topic)
     time.sleep(_REQUEST_DELAY)
 
@@ -134,7 +115,6 @@ def scrape_topic(topic: str) -> dict | None:
     summary = summary_data.get("extract", "") if summary_data else ""
     wiki_url = f"https://en.wikipedia.org/wiki/{_url_encode(topic)}"
 
-    # Combine summary + full text
     content_parts: list[str] = []
     if summary:
         content_parts.append(f"# {title}\n\n{summary}")
@@ -160,12 +140,7 @@ def scrape_topic(topic: str) -> dict | None:
 
 
 def scrape_topics(topics: list[str]) -> list[dict]:
-    """
-    Scrape multiple Wikipedia topics.
-
-    Skips failures and continues to the next topic.
-    Returns only successful results.
-    """
+    """Scrape multiple Wikipedia topics."""
     results: list[dict] = []
     for topic in topics:
         data = scrape_topic(topic)
