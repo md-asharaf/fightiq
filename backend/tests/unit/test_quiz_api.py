@@ -19,13 +19,15 @@ async def override_get_db():
     mock_session.execute.return_value = mock_result
     yield mock_session
 
+
 app.dependency_overrides[get_db] = override_get_db
 
 
 @pytest.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test",
+        transport=ASGITransport(app=app),
+        base_url="http://test",
     ) as c:
         yield c
 

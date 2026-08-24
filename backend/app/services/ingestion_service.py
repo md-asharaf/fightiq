@@ -19,6 +19,7 @@ log = get_logger(__name__)
 
 EMBED_BATCH_SIZE = 50
 
+
 class IngestionService:
     ALLOWED_EXTENSIONS = {".txt", ".md", ".pdf", ".json"}
     MAX_FILE_SIZE = 10 * 1024 * 1024
@@ -127,16 +128,22 @@ class IngestionService:
 
         ext = Path(filename).suffix.lower()
         if ext not in self.ALLOWED_EXTENSIONS:
-            raise ValidationError(f"Unsupported file type '{ext}'. Allowed: {sorted(self.ALLOWED_EXTENSIONS)}")
+            raise ValidationError(
+                f"Unsupported file type '{ext}'. Allowed: {sorted(self.ALLOWED_EXTENSIONS)}"
+            )
 
         if category not in self.VALID_CATEGORIES:
-            raise ValidationError(f"Invalid category '{category}'. Allowed: {sorted(self.VALID_CATEGORIES)}")
+            raise ValidationError(
+                f"Invalid category '{category}'. Allowed: {sorted(self.VALID_CATEGORIES)}"
+            )
 
         if not content:
             raise ValidationError("Uploaded file is empty.")
 
         if len(content) > self.MAX_FILE_SIZE:
-            raise ValidationError(f"File too large. Maximum size: {self.MAX_FILE_SIZE // (1024 * 1024)} MB.")
+            raise ValidationError(
+                f"File too large. Maximum size: {self.MAX_FILE_SIZE // (1024 * 1024)} MB."
+            )
 
         meta = metadata or {}
         meta.setdefault("original_filename", filename)

@@ -14,14 +14,23 @@ log = get_logger(__name__)
 class ExaSearchProvider:
     """Concrete implementation of IWebSearchProvider using Exa and Semantic Cache."""
 
-    def __init__(self, api_key: str, cache_repo: ToolCacheRepository, kg_repo: KnowledgeGraphRepository, embedder: Embedder, llm: BaseChatModel):
+    def __init__(
+        self,
+        api_key: str,
+        cache_repo: ToolCacheRepository,
+        kg_repo: KnowledgeGraphRepository,
+        embedder: Embedder,
+        llm: BaseChatModel,
+    ):
         self.api_key = api_key
         self.cache_repo = cache_repo
         self.kg_repo = kg_repo
         self.embedder = embedder
         self.llm = llm
 
-    async def search(self, query: str, search_type: str, num_results: int = 3, use_cache: bool = True) -> str:
+    async def search(
+        self, query: str, search_type: str, num_results: int = 3, use_cache: bool = True
+    ) -> str:
         """Search the web using Exa, checking the semantic cache first."""
         if not self.api_key:
             return "Search API key not configured. Web search is unavailable."
@@ -35,7 +44,7 @@ class ExaSearchProvider:
                     query_embedding=query_embedding,
                     tool_name=search_type,
                     distance_threshold=0.15,
-                    hours=24
+                    hours=24,
                 )
                 if cached_payload:
                     log.info(f"Semantic Cache HIT for query: {query}")
@@ -48,7 +57,7 @@ class ExaSearchProvider:
         # 2. Perform actual search
         retriever = ExaSearchRetriever(
             exa_api_key=self.api_key,
-            type=search_type, # 'neural' or 'keyword'
+            type=search_type,  # 'neural' or 'keyword'
             use_autoprompt=True,
             num_results=num_results,
         )
@@ -56,7 +65,10 @@ class ExaSearchProvider:
         # ExaSearchRetriever supports ainvoke
         docs = await retriever.ainvoke(query)
 
-        payload = "\n\n".join(f"Title: {d.metadata.get('title')}\nSource: {d.metadata.get('url')}\nContent: {d.page_content}" for d in docs)
+        payload = "\n\n".join(
+            f"Title: {d.metadata.get('title')}\nSource: {d.metadata.get('url')}\nContent: {d.page_content}"
+            for d in docs
+        )
 
         # 3. Store in cache
         if use_cache:
@@ -67,7 +79,7 @@ class ExaSearchProvider:
                     query=query,
                     query_embedding=query_embedding,
                     tool_name=search_type,
-                    payload=payload
+                    payload=payload,
                 )
                 await self.cache_repo.commit()
             except Exception as e:
@@ -76,6 +88,7 @@ class ExaSearchProvider:
 
         # 4. Trigger background extraction
         from app.services.knowledge_extractor import KnowledgeExtractor
+
         extractor = KnowledgeExtractor(repo=self.kg_repo, llm=self.llm)
         asyncio.create_task(extractor.extract_and_ingest(query, payload))
 

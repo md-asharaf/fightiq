@@ -194,7 +194,9 @@ export async function deleteSession(sessionId: string) {
     try {
       const errorData = await response.json();
       if (errorData.detail) errorMsg = errorData.detail;
-    } catch { }
+    } catch (e) {
+      console.debug("Failed to parse delete session error response", e);
+    }
     throw new Error(errorMsg);
   }
 }

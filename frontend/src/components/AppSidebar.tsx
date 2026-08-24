@@ -47,7 +47,8 @@ export function AppSidebar() {
     queryFn: async () => {
       try {
         return await fetchApi("/chat/sessions");
-      } catch {
+      } catch (e) {
+        console.error("Failed to fetch sessions:", e);
         return [];
       }
     },

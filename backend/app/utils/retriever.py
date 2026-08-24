@@ -35,6 +35,7 @@ class UFCRetriever(BaseRetriever):
     ) -> list[LCDocument]:
         """Synchronous retrieval fallback."""
         import asyncio
+
         return asyncio.run(
             self._aget_relevant_documents(query, run_manager=run_manager)  # type: ignore[arg-type]
         )

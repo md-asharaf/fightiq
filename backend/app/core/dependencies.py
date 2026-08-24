@@ -54,11 +54,10 @@ def get_embedder() -> Embedder:
     return _embedder
 
 
-async def get_current_user(
-    request: Request,
-    db: AsyncSession = Depends(get_db)
-) -> User | None:
-    token = request.cookies.get("better-auth.session_token") or request.cookies.get("__Secure-better-auth.session_token")
+async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)) -> User | None:
+    token = request.cookies.get("better-auth.session_token") or request.cookies.get(
+        "__Secure-better-auth.session_token"
+    )
     if not token:
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
@@ -101,6 +100,15 @@ def require_auth(user: User | None = Depends(get_current_user)) -> User:
     return user
 
 
+def require_admin(user: User = Depends(require_auth)) -> User:
+    if user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required",
+        )
+    return user
+
+
 def get_chat_llm() -> BaseChatModel:
     return ChatGoogleGenerativeAI(
         model=settings.llm_model,
@@ -112,6 +120,7 @@ def get_chat_llm() -> BaseChatModel:
 
 def get_fast_llm() -> BaseChatModel:
     from langchain_groq import ChatGroq
+
     return ChatGroq(
         model=settings.groq_model,
         api_key=SecretStr(settings.groq_api_key) if settings.groq_api_key else None,
@@ -132,17 +141,12 @@ def get_search_provider(
     kg_repo = KnowledgeGraphRepository(session=session)
 
     return ExaSearchProvider(
-        settings.exa_api_key,
-        cache_repo=cache_repo,
-        kg_repo=kg_repo,
-        embedder=embedder,
-        llm=llm
+        settings.exa_api_key, cache_repo=cache_repo, kg_repo=kg_repo, embedder=embedder, llm=llm
     )
 
 
 def get_search_tools(
-    provider: IWebSearchProvider = Depends(get_search_provider),
-    db: AsyncSession = Depends(get_db)
+    provider: IWebSearchProvider = Depends(get_search_provider), db: AsyncSession = Depends(get_db)
 ) -> list[BaseTool]:
     normal_tool_cached = StructuredTool.from_function(
         coroutine=lambda query: provider.search(query, "keyword", 3, use_cache=True),
@@ -161,6 +165,7 @@ def get_search_tools(
     )
 
     from app.services.database_tool_service import DatabaseToolService
+
     db_tool_service = DatabaseToolService(db)
 
     sql_tool = StructuredTool.from_function(
@@ -172,7 +177,7 @@ def get_search_tools(
             "- fighters (id, name, nickname, weight_class, wins, losses, draws, is_champion, title_defenses, championships, win_streak, team, stance, height_cm, reach_cm, slpm, str_acc, sapm, str_def, td_avg, td_acc, td_def, sub_avg, last_updated)\n"
             "- events (id, name, date, location, last_updated)\n"
             "Use standard PostgreSQL syntax. NEVER run updates or deletes."
-        )
+        ),
     )
 
     return [sql_tool, normal_tool_cached, normal_tool_realtime, deep_tool]
@@ -183,11 +188,13 @@ def get_retriever(
     embedder: Embedder = Depends(get_embedder),
 ):
     from app.utils.retriever import UFCRetriever
+
     return UFCRetriever(session=session, embedder=embedder)
 
 
 def get_chat_repository(session: AsyncSession = Depends(get_db)) -> IChatRepository:
     from app.repositories.chat_repository import ChatRepository
+
     return ChatRepository(session=session)
 
 
@@ -198,20 +205,22 @@ def get_agent_factory(
     search_tools: list[BaseTool] = Depends(get_search_tools),
 ):
     from app.services.agent_factory import AgentFactory
+
     return AgentFactory(db=db, embedder=embedder, llm=llm, search_tools=search_tools)
+
 
 def get_chat_service(
     repo: IChatRepository = Depends(get_chat_repository),
-    agent_factory = Depends(get_agent_factory),
+    agent_factory=Depends(get_agent_factory),
 ):
     from app.services.chat_service import ChatService
-    return ChatService(
-        chat_repository=repo, agent_factory=agent_factory
-    )
+
+    return ChatService(chat_repository=repo, agent_factory=agent_factory)
 
 
 def get_eval_repository(session: AsyncSession = Depends(get_db)) -> IEvalRepository:
     from app.repositories.eval_repository import EvalRepository
+
     return EvalRepository(session=session)
 
 
@@ -223,29 +232,40 @@ def get_eval_service(
     agent_factory=Depends(get_agent_factory),
 ):
     from app.services.eval_service import EvalService
-    return EvalService(eval_repository=repo, db=db, embedder=embedder, llm=llm, agent_factory=agent_factory)
+
+    return EvalService(
+        eval_repository=repo, db=db, embedder=embedder, llm=llm, agent_factory=agent_factory
+    )
 
 
 def get_quiz_repository(session: AsyncSession = Depends(get_db)) -> IQuizRepository:
     from app.repositories.quiz_repository import QuizRepository
+
     return QuizRepository(session=session)
+
 
 def get_chunk_repository(session: AsyncSession = Depends(get_db)):
     from app.repositories.chunk_repository import ChunkRepository
+
     return ChunkRepository(session=session)
+
 
 def get_quiz_service(
     repo: IQuizRepository = Depends(get_quiz_repository),
-    chunk_repo = Depends(get_chunk_repository),
+    chunk_repo=Depends(get_chunk_repository),
     embedder: Embedder = Depends(get_embedder),
     llm: BaseChatModel = Depends(get_fast_llm),
 ):
     from app.services.quiz_service import QuizService
-    return QuizService(quiz_repository=repo, chunk_repository=chunk_repo, embedder=embedder, llm=llm)
+
+    return QuizService(
+        quiz_repository=repo, chunk_repository=chunk_repo, embedder=embedder, llm=llm
+    )
 
 
 def get_document_repository(session: AsyncSession = Depends(get_db)) -> IDocumentRepository:
     from app.repositories.document_repository import DocumentRepository
+
     return DocumentRepository(session=session)
 
 
@@ -255,21 +275,24 @@ def get_document_service(
     embedder: Embedder = Depends(get_embedder),
 ):
     from app.services.document_service import DocumentService
+
     return DocumentService(document_repository=repo, db=db, embedder=embedder)
 
 
 def get_ingestion_service(
     doc_repo: IDocumentRepository = Depends(get_document_repository),
-    chunk_repo = Depends(get_chunk_repository),
+    chunk_repo=Depends(get_chunk_repository),
     embedder: Embedder = Depends(get_embedder),
 ):
     from app.services.ingestion_service import IngestionService
+
     return IngestionService(doc_repo=doc_repo, chunk_repo=chunk_repo, embedder=embedder)
 
 
 def get_seed_service(
     doc_repo: IDocumentRepository = Depends(get_document_repository),
-    ingestion_service = Depends(get_ingestion_service),
+    ingestion_service=Depends(get_ingestion_service),
 ):
     from app.services.seed_service import SeedService
+
     return SeedService(doc_repo=doc_repo, ingestion_service=ingestion_service)

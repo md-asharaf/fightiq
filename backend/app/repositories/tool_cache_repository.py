@@ -23,7 +23,8 @@ class ToolCacheRepository(BaseRepository[SemanticToolCache]):
             .where(
                 SemanticToolCache.tool_name == tool_name,
                 SemanticToolCache.created_at >= cutoff_time,
-                SemanticToolCache.query_embedding.cosine_distance(query_embedding) < distance_threshold
+                SemanticToolCache.query_embedding.cosine_distance(query_embedding)
+                < distance_threshold,
             )
             .order_by(SemanticToolCache.query_embedding.cosine_distance(query_embedding))
             .limit(1)
@@ -44,8 +45,10 @@ class ToolCacheRepository(BaseRepository[SemanticToolCache]):
             query=query,
             query_embedding=query_embedding,
             tool_name=tool_name,
-            result_payload=payload
+            result_payload=payload,
         )
         self.session.add(new_cache)
-        await self.session.flush() # Flush to get ID if needed, but don't commit here. Let caller commit.
+        await (
+            self.session.flush()
+        )  # Flush to get ID if needed, but don't commit here. Let caller commit.
         return new_cache

@@ -62,3 +62,4 @@ postgres_data/
 # Logs
 *.log
 logs/
+*.sh

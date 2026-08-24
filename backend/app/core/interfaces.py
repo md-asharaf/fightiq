@@ -8,7 +8,9 @@ from app.db.models import ChatMessage, ChatSession, Document, EvalRun, QuizResul
 class IChatRepository(Protocol):
     async def get_session(self, session_id: uuid.UUID) -> ChatSession | None: ...
 
-    async def create_session(self, session_id: uuid.UUID, user_id: str | None = None) -> ChatSession: ...
+    async def create_session(
+        self, session_id: uuid.UUID, user_id: str | None = None
+    ) -> ChatSession: ...
 
     async def add_message(
         self, session_id: uuid.UUID, role: str, content: str, sources: list | None = None
@@ -34,13 +36,17 @@ class IDocumentRepository(Protocol):
 
 
 class IEvalRepository(Protocol):
-    async def create_eval_run(self, dataset_name: str, overall_scores: dict, question_results: list) -> EvalRun: ...
+    async def create_eval_run(
+        self, dataset_name: str, overall_scores: dict, question_results: list
+    ) -> EvalRun: ...
 
     async def get_all_runs(self) -> Sequence[EvalRun]: ...
 
 
 class IQuizRepository(Protocol):
-    async def create_session(self, topic: str, category: str | None, difficulty: str, questions: list) -> QuizSession: ...
+    async def create_session(
+        self, topic: str, category: str | None, difficulty: str, questions: list
+    ) -> QuizSession: ...
 
     async def get_session(self, session_id: uuid.UUID) -> QuizSession | None: ...
 

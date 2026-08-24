@@ -30,9 +30,19 @@ class ChatService:
         chat_session = await self.repo.get_session(session_uuid)
         if not chat_session:
             chat_session = await self.repo.create_session(session_uuid, user_id)
+        else:
+            if chat_session.user_id and chat_session.user_id != user_id:
+                raise ResourceNotFoundError(f"Chat session '{session_id_str}' not found")
         return chat_session
 
-    async def process_message(self, session_id_str: str, message: str, stream: bool, user_id: str | None = None, filters: dict | None = None):
+    async def process_message(
+        self,
+        session_id_str: str,
+        message: str,
+        stream: bool,
+        user_id: str | None = None,
+        filters: dict | None = None,
+    ):
         chat_session = await self.get_or_create_session(session_id_str, user_id)
         history: list[BaseMessage] = []
 
@@ -63,9 +73,7 @@ class ChatService:
                 if action.tool == "search_knowledge_base" and isinstance(observation, list):
                     sources.extend(extract_citations(observation))
 
-        await self.repo.add_message(
-            chat_session.id, "assistant", result["output"], sources
-        )
+        await self.repo.add_message(chat_session.id, "assistant", result["output"], sources)
 
         return ChatMessage(
             role="assistant",
@@ -73,15 +81,19 @@ class ChatService:
             sources=sources,
         )
 
-    async def _stream_response(self, session_id: uuid.UUID, message: str, history: list[BaseMessage], filters: dict | None) -> AsyncGenerator[str, None]:
+    async def _stream_response(
+        self, session_id: uuid.UUID, message: str, history: list[BaseMessage], filters: dict | None
+    ) -> AsyncGenerator[str, None]:
         import asyncio
+
         full_response = ""
         sources: list[Any] = []
         agent_executor = self.agent_factory.create_agent(filters)
 
         try:
             async for event in agent_executor.astream_events(
-                {"input": message, "chat_history": history}, version="v2",
+                {"input": message, "chat_history": history},
+                version="v2",
             ):
                 kind = event["event"]
                 if kind == "on_tool_end" and event["name"] == "search_knowledge_base":
@@ -94,7 +106,11 @@ class ChatService:
                 elif kind == "on_chat_model_stream":
                     chunk_content = event["data"]["chunk"].content
                     if isinstance(chunk_content, list):
-                        chunk_str = "".join(block.get("text", "") for block in chunk_content if block.get("type") == "text")
+                        chunk_str = "".join(
+                            block.get("text", "")
+                            for block in chunk_content
+                            if block.get("type") == "text"
+                        )
                     else:
                         chunk_str = str(chunk_content)
                     if chunk_str:
@@ -113,20 +129,23 @@ class ChatService:
                 await self.repo.add_message(session_id, "assistant", full_response, sources)
             raise
 
-    async def get_history(self, session_id_str: str) -> ChatHistory:
+    async def get_history(self, session_id_str: str, user_id: str | None = None) -> ChatHistory:
         session_uuid = uuid.UUID(session_id_str)
         chat_session = await self.repo.get_session(session_uuid)
         if not chat_session:
             raise ResourceNotFoundError(f"Chat session '{session_id_str}' not found")
+        if chat_session.user_id and chat_session.user_id != user_id:
+            raise ResourceNotFoundError(f"Chat session '{session_id_str}' not found")
+
         sorted_messages = sorted(chat_session.messages, key=lambda x: x.created_at)
         messages = [
-            ChatMessage(role=m.role, content=m.content, sources=m.sources)
-            for m in sorted_messages
+            ChatMessage(role=m.role, content=m.content, sources=m.sources) for m in sorted_messages
         ]
         return ChatHistory(session_id=session_id_str, messages=messages)
 
     async def list_sessions(self, user_id: str | None = None) -> list[Any]:
         from app.schemas.chat import ChatSessionPreview
+
         sessions = await self.repo.list_sessions(user_id=user_id)
         previews = []
         for s in sessions:
@@ -137,16 +156,18 @@ class ChatService:
                     break
             previews.append(
                 ChatSessionPreview(
-                    session_id=str(s.id),
-                    created_at=s.created_at,
-                    preview_text=preview_text
+                    session_id=str(s.id), created_at=s.created_at, preview_text=preview_text
                 )
             )
         return previews
 
-    async def delete_history(self, session_id_str: str) -> bool:
+    async def delete_history(self, session_id_str: str, user_id: str | None = None) -> bool:
         session_uuid = uuid.UUID(session_id_str)
-        success = await self.repo.delete_session(session_uuid)
-        if not success:
+        chat_session = await self.repo.get_session(session_uuid)
+        if not chat_session:
             raise ResourceNotFoundError(f"Chat session '{session_id_str}' not found")
+        if chat_session.user_id and chat_session.user_id != user_id:
+            raise ResourceNotFoundError(f"Chat session '{session_id_str}' not found")
+
+        success = await self.repo.delete_session(session_uuid)
         return success

@@ -16,6 +16,7 @@ from app.utils.embedder import Embedder
 configure_logging()
 log = get_logger(__name__)
 
+
 async def seed() -> None:
     """Script to manually seed the knowledge base."""
     log.info("Starting knowledge base seed process...")
@@ -24,7 +25,9 @@ async def seed() -> None:
     async with AsyncSessionLocal() as session:
         doc_repo = DocumentRepository(session=session)
         chunk_repo = ChunkRepository(session=session)
-        ingestion_service = IngestionService(doc_repo=doc_repo, chunk_repo=chunk_repo, embedder=embedder)
+        ingestion_service = IngestionService(
+            doc_repo=doc_repo, chunk_repo=chunk_repo, embedder=embedder
+        )
         seed_service = SeedService(doc_repo=doc_repo, ingestion_service=ingestion_service)
 
         counts = await seed_service.seed_knowledge_base(force=False)
@@ -34,6 +37,7 @@ async def seed() -> None:
             log.info("Seed data ingested successfully", total=total_seeded, by_category=counts)
         else:
             log.info("Knowledge base already seeded — no new documents added")
+
 
 if __name__ == "__main__":
     asyncio.run(seed())

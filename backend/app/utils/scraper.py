@@ -115,6 +115,7 @@ def _fetch_generic_url(url: str) -> dict | None:
         log.error("Failed to scrape URL", url=url, error=str(exc))
         return None
 
+
 def scrape_topic(topic: str) -> dict | None:
     """Scrape a Wikipedia topic or a URL and return its title, content, and URL."""
     if topic.startswith("http://") or topic.startswith("https://"):
@@ -159,6 +160,7 @@ def scrape_topic(topic: str) -> dict | None:
         "url": wiki_url,
     }
 
+
 def scrape_topics_generator(topics: list[str]):
     """Generator that yields progress for scraping multiple topics."""
     total = len(topics)
@@ -169,4 +171,3 @@ def scrape_topics_generator(topics: list[str]):
             yield {"status": "success", "topic": topic, "data": data}
         else:
             yield {"status": "error", "topic": topic, "message": "Failed to scrape"}
-

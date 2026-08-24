@@ -14,6 +14,7 @@ router = APIRouter()
 ChatServiceDep = Annotated[ChatService, Depends(get_chat_service)]
 CurrentUserDep = Annotated[User | None, Depends(get_current_user)]
 
+
 @router.post("/message")
 async def chat_message(
     request: ChatRequest,
@@ -41,7 +42,7 @@ async def chat_message(
                 "Cache-Control": "no-cache, no-transform",
                 "Connection": "keep-alive",
                 "X-Accel-Buffering": "no",
-            }
+            },
         )
 
     return ChatResponse(session_id=request.session_id, message=response)
@@ -56,6 +57,7 @@ async def list_chat_sessions(
     If unauthenticated, returns 401 Unauthorized to trigger frontend state.
     """
     from fastapi import HTTPException
+
     if not current_user:
         raise HTTPException(status_code=401, detail="Authentication required to view chat history")
     return await chat_service.list_sessions(user_id=current_user.id)
@@ -65,16 +67,20 @@ async def list_chat_sessions(
 async def get_chat_history(
     session_id: uuid.UUID,
     chat_service: ChatServiceDep,
+    current_user: CurrentUserDep,
 ):
     """Retrieve the conversation history for a given session."""
-    return await chat_service.get_history(str(session_id))
+    user_id = current_user.id if current_user else None
+    return await chat_service.get_history(str(session_id), user_id=user_id)
 
 
 @router.delete("/history/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def clear_chat_history(
     session_id: uuid.UUID,
     chat_service: ChatServiceDep,
+    current_user: CurrentUserDep,
 ):
     """Clear the conversation history for a given session."""
-    await chat_service.delete_history(str(session_id))
+    user_id = current_user.id if current_user else None
+    await chat_service.delete_history(str(session_id), user_id=user_id)
     return None

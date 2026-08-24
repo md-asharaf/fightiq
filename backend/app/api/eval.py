@@ -2,7 +2,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
 
-from app.core.dependencies import get_eval_service
+from app.core.dependencies import get_eval_service, require_admin
+from app.db.auth_models import User
 from app.schemas.eval import EvalRunResult
 from app.services.eval_service import EvalService
 
@@ -10,19 +11,20 @@ router = APIRouter()
 
 EvalServiceDep = Annotated[EvalService, Depends(get_eval_service)]
 
+
 @router.post("/run", response_model=EvalRunResult, status_code=status.HTTP_200_OK)
 async def api_run_evaluation(
     eval_service: EvalServiceDep,
+    admin: User = Depends(require_admin),
 ):
-    """Trigger a Ragas evaluation run using the dataset in data/eval/eval_dataset.json.
-    """
+    """Trigger a Ragas evaluation run using the dataset in data/eval/eval_dataset.json."""
     return await eval_service.run_evaluation()
 
 
 @router.get("/results", response_model=list[EvalRunResult])
 async def api_get_eval_results(
-    eval_service: EvalServiceDep
+    eval_service: EvalServiceDep,
+    admin: User = Depends(require_admin),
 ):
-    """Retrieve past evaluation results.
-    """
+    """Retrieve past evaluation results."""
     return await eval_service.get_results()

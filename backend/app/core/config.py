@@ -9,13 +9,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 
+
 class Settings(BaseSettings):
     """Central application settings — single source of truth for all config."""
 
     model_config = SettingsConfigDict(
-        env_file=(
-            str(_BACKEND_DIR / ".env")
-        ),
+        env_file=(str(_BACKEND_DIR / ".env")),
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -32,7 +31,9 @@ class Settings(BaseSettings):
         url = self.database_url
 
         # asyncpg does not support 'sslmode', it requires 'ssl'
-        url = url.replace("?sslmode=require", "?ssl=require").replace("&sslmode=require", "&ssl=require")
+        url = url.replace("?sslmode=require", "?ssl=require").replace(
+            "&sslmode=require", "&ssl=require"
+        )
 
         connect_args = {}
         if "&options=" in url:
@@ -59,9 +60,7 @@ class Settings(BaseSettings):
     chunk_size: int = 800
     chunk_overlap: int = 120
 
-    backend_cors_origins: list[str] = [
-        "http://localhost:3000"
-    ]
+    backend_cors_origins: list[str] = ["http://localhost:3000"]
 
     @field_validator("backend_cors_origins", mode="before")
     @classmethod

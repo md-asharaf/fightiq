@@ -116,7 +116,6 @@ class TestSimilaritySearchRequest:
         with pytest.raises(ValidationError):
             SimilaritySearchRequest(query="test", k=21)  # type: ignore[call-arg]
 
-
     def test_valid_category_filter(self):
         req = SimilaritySearchRequest(query="test", category="fighters")
         assert req.category == "fighters"

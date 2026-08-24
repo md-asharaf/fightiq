@@ -9,6 +9,7 @@ from app.repositories.base_repository import BaseRepository
 
 log = get_logger(__name__)
 
+
 class ChunkRepository(BaseRepository[Chunk]):
     def __init__(self, session: AsyncSession):
         super().__init__(Chunk, session)

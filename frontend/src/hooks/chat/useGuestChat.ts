@@ -29,7 +29,8 @@ export function useGuestChat(
               updateUrlSession(savedId);
             }, 0);
           }
-        } catch {
+        } catch (e) {
+          console.debug("Failed to parse guest chat from local storage:", e);
         }
       }
     }

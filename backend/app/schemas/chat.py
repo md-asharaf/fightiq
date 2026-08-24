@@ -10,7 +10,9 @@ class ChatMessage(BaseModel):
 
     role: str = Field(description="Role of the sender: 'user' or 'assistant'")
     content: str = Field(description="Content of the message")
-    sources: list[dict[str, Any]] | None = Field(default=None, description="Sources used for this answer, if any")
+    sources: list[dict[str, Any]] | None = Field(
+        default=None, description="Sources used for this answer, if any"
+    )
 
 
 class ChatRequest(BaseModel):

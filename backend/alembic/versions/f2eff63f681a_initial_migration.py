@@ -5,6 +5,7 @@ Revises:
 Create Date: 2026-08-22 20:15:06.554100
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -22,56 +23,87 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.execute('CREATE EXTENSION IF NOT EXISTS vector')
-    op.create_table("documents",
-    sa.Column("id", sa.UUID(), nullable=False),
-    sa.Column("title", sa.String(length=500), nullable=False),
-    sa.Column("source", sa.String(length=1000), nullable=False),
-    sa.Column("category", sa.String(length=100), nullable=False),
-    sa.Column("source_type", sa.String(length=50), nullable=False),
-    sa.Column("chunk_count", sa.Integer(), nullable=False),
-    sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column("is_active", sa.Boolean(), nullable=False),
-    sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    sa.PrimaryKeyConstraint("id"),
-    sa.UniqueConstraint("source"),
+    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    op.create_table(
+        "documents",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("title", sa.String(length=500), nullable=False),
+        sa.Column("source", sa.String(length=1000), nullable=False),
+        sa.Column("category", sa.String(length=100), nullable=False),
+        sa.Column("source_type", sa.String(length=50), nullable=False),
+        sa.Column("chunk_count", sa.Integer(), nullable=False),
+        sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("is_active", sa.Boolean(), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("source"),
     )
     op.create_index(op.f("ix_documents_category"), "documents", ["category"], unique=False)
-    op.create_table("quiz_sessions",
-    sa.Column("id", sa.UUID(), nullable=False),
-    sa.Column("topic", sa.String(length=300), nullable=False),
-    sa.Column("category", sa.String(length=100), nullable=True),
-    sa.Column("difficulty", sa.String(length=50), nullable=False),
-    sa.Column("num_questions", sa.Integer(), nullable=False),
-    sa.Column("questions", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    sa.PrimaryKeyConstraint("id"),
+    op.create_table(
+        "quiz_sessions",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("topic", sa.String(length=300), nullable=False),
+        sa.Column("category", sa.String(length=100), nullable=True),
+        sa.Column("difficulty", sa.String(length=50), nullable=False),
+        sa.Column("num_questions", sa.Integer(), nullable=False),
+        sa.Column("questions", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.PrimaryKeyConstraint("id"),
     )
-    op.create_table("chunks",
-    sa.Column("id", sa.UUID(), nullable=False),
-    sa.Column("document_id", sa.UUID(), nullable=False),
-    sa.Column("content", sa.Text(), nullable=False),
-    sa.Column("embedding", sqlalchemy.vector.VECTOR(dim=768), nullable=True),
-    sa.Column("chunk_index", sa.Integer(), nullable=False),
-    sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    sa.ForeignKeyConstraint(["document_id"], ["documents.id"], ondelete="CASCADE"),
-    sa.PrimaryKeyConstraint("id"),
+    op.create_table(
+        "chunks",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("document_id", sa.UUID(), nullable=False),
+        sa.Column("content", sa.Text(), nullable=False),
+        sa.Column("embedding", sqlalchemy.vector.VECTOR(dim=768), nullable=True),
+        sa.Column("chunk_index", sa.Integer(), nullable=False),
+        sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.ForeignKeyConstraint(["document_id"], ["documents.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_chunks_document_id"), "chunks", ["document_id"], unique=False)
-    op.create_table("quiz_results",
-    sa.Column("id", sa.UUID(), nullable=False),
-    sa.Column("session_id", sa.UUID(), nullable=False),
-    sa.Column("answers", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column("score", sa.Integer(), nullable=False),
-    sa.Column("total_questions", sa.Integer(), nullable=False),
-    sa.Column("score_percentage", sa.Float(), nullable=False),
-    sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    sa.ForeignKeyConstraint(["session_id"], ["quiz_sessions.id"], ondelete="CASCADE"),
-    sa.PrimaryKeyConstraint("id"),
+    op.create_table(
+        "quiz_results",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("session_id", sa.UUID(), nullable=False),
+        sa.Column("answers", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("score", sa.Integer(), nullable=False),
+        sa.Column("total_questions", sa.Integer(), nullable=False),
+        sa.Column("score_percentage", sa.Float(), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.ForeignKeyConstraint(["session_id"], ["quiz_sessions.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_quiz_results_session_id"), "quiz_results", ["session_id"], unique=False)
+    op.create_index(
+        op.f("ix_quiz_results_session_id"), "quiz_results", ["session_id"], unique=False
+    )
     # ### end Alembic commands ###
 
 

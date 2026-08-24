@@ -5,8 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 log = logging.getLogger(__name__)
 
+
 class DatabaseToolService:
     """Service to safely execute SQL queries on behalf of the AI Agent."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

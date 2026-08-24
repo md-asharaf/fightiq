@@ -11,11 +11,13 @@ class EvalRepository(BaseRepository[EvalRun]):
     def __init__(self, session: AsyncSession):
         super().__init__(EvalRun, session)
 
-    async def create_eval_run(self, dataset_name: str, overall_scores: dict, question_results: list) -> EvalRun:
+    async def create_eval_run(
+        self, dataset_name: str, overall_scores: dict, question_results: list
+    ) -> EvalRun:
         eval_run = EvalRun(
             dataset_name=dataset_name,
             overall_scores=overall_scores,
-            question_results=question_results
+            question_results=question_results,
         )
         return self.add(eval_run)
 

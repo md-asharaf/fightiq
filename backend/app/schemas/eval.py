@@ -26,6 +26,8 @@ class EvalRunResult(BaseModel):
 
     run_id: str
     dataset_name: str
-    overall_scores: dict[str, float] = Field(description="Average score for each metric across all questions")
+    overall_scores: dict[str, float] = Field(
+        description="Average score for each metric across all questions"
+    )
     question_results: list[EvalQuestionResult]
     created_at: datetime = Field(default_factory=datetime.utcnow)

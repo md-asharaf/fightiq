@@ -13,7 +13,14 @@ from app.utils.retriever import UFCRetriever
 
 class AgentFactory:
     """Factory for creating the FightIQ LangChain Agent."""
-    def __init__(self, db: AsyncSession, embedder: Embedder, llm: BaseChatModel, search_tools: Sequence[BaseTool]):
+
+    def __init__(
+        self,
+        db: AsyncSession,
+        embedder: Embedder,
+        llm: BaseChatModel,
+        search_tools: Sequence[BaseTool],
+    ):
         self.db = db
         self.embedder = embedder
         self.llm = llm
@@ -38,8 +45,11 @@ class AgentFactory:
         )
         tools = [knowledge_base_tool] + list(self.search_tools)
 
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are FightIQ, an elite, hardcore MMA analyst and expert assistant for the UFC.
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    """You are FightIQ, an elite, hardcore MMA analyst and expert assistant for the UFC.
 You have access to a structured SQL Knowledge Graph, a semantic vector database, and the live web.
 
 You MUST speak and reason like a true MMA expert (e.g., Dan Hardy, Jon Anik). Use hardcore MMA terminology natively (e.g., SLpM, TDD, Southpaw, Orthodox, Champ-Champ, Pound-for-Pound, Submission by Guillotine). When discussing matchups, always analyze stances, reach advantages, win streaks, gym affiliations, striking volume (SLpM, SApM, str_acc), and grappling metrics (td_avg, td_def, sub_avg) if the data is available.
@@ -50,10 +60,12 @@ You MUST follow this strict "waterfall" logic to answer questions:
 2. SEMANTIC RULES/HISTORY SECOND: If the query is about rules, historical contexts, or things not found in the SQL tables, use `search_knowledge_base` to search the vector database.
 3. WEB SEARCH AS FALLBACK: If (and ONLY if) the internal databases do not contain the answer, or if the user asks for breaking news/rumors, use `normal_web_search` (cached) or `realtime_web_search` (uncached, for live updates).
 
-When citing sources, format them properly."""),
-            MessagesPlaceholder(variable_name="chat_history"),
-            ("user", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad"),
-        ])
+When citing sources, format them properly.""",
+                ),
+                MessagesPlaceholder(variable_name="chat_history"),
+                ("user", "{input}"),
+                MessagesPlaceholder(variable_name="agent_scratchpad"),
+            ]
+        )
         agent = create_tool_calling_agent(self.llm, tools, prompt)
         return AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=5)

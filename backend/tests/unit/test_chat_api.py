@@ -13,7 +13,8 @@ from app.schemas.chat import ChatHistory, ChatMessage
 @pytest.fixture
 async def client():
     async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test",
+        transport=ASGITransport(app=app),
+        base_url="http://test",
     ) as c:
         yield c
 

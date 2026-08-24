@@ -17,7 +17,7 @@ def build_quiz_submit_response(
         explanation = q_data["explanation"]
 
         selected_id = answers.get(q_id)
-        is_correct = (selected_id == correct_id)
+        is_correct = selected_id == correct_id
 
         if is_correct:
             score += 1

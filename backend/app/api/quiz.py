@@ -18,6 +18,7 @@ router = APIRouter()
 QuizServiceDep = Annotated[QuizService, Depends(get_quiz_service)]
 CurrentUserDep = Annotated[User | None, Depends(get_current_user)]
 
+
 @router.post("/generate", response_model=QuizSessionRead, status_code=status.HTTP_201_CREATED)
 async def api_generate_quiz(
     request: QuizGenerateRequest,
@@ -25,7 +26,9 @@ async def api_generate_quiz(
     current_user: CurrentUserDep,
 ):
     """Generate a new quiz based on a topic and save the session to the DB."""
-    return await quiz_service.generate_quiz(request, user_id=current_user.id if current_user else None)
+    return await quiz_service.generate_quiz(
+        request, user_id=current_user.id if current_user else None
+    )
 
 
 @router.post("/submit", response_model=QuizSubmitResponse)
@@ -35,7 +38,9 @@ async def api_submit_quiz(
     current_user: CurrentUserDep,
 ):
     """Submit answers for a quiz session and get the graded results."""
-    return await quiz_service.evaluate_quiz(request, user_id=current_user.id if current_user else None)
+    return await quiz_service.evaluate_quiz(
+        request, user_id=current_user.id if current_user else None
+    )
 
 
 @router.get("/sessions", response_model=list[QuizSessionRead])
@@ -58,7 +63,9 @@ async def api_get_quiz_session(
     current_user: CurrentUserDep,
 ):
     """Get a specific quiz session (without answers)."""
-    return await quiz_service.get_session(session_id, user_id=current_user.id if current_user else None)
+    return await quiz_service.get_session(
+        session_id, user_id=current_user.id if current_user else None
+    )
 
 
 @router.get("/results/{session_id}", response_model=QuizSubmitResponse)
@@ -68,4 +75,6 @@ async def api_get_quiz_result(
     current_user: CurrentUserDep,
 ):
     """Get the result of a submitted quiz session."""
-    return await quiz_service.get_detailed_result(session_id, user_id=current_user.id if current_user else None)
+    return await quiz_service.get_detailed_result(
+        session_id, user_id=current_user.id if current_user else None
+    )

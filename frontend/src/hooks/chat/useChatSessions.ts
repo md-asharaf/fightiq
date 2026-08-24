@@ -8,7 +8,8 @@ export function useChatSessions(session: unknown, sessionLoading: boolean) {
     queryFn: async () => {
       try {
         return await fetchApi("/chat/sessions");
-      } catch {
+      } catch (e) {
+        console.debug("Failed to fetch chat sessions:", e);
         return [];
       }
     },

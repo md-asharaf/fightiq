@@ -18,7 +18,9 @@ class InMemoryChatRepository(IChatRepository):
     async def get_session(self, session_id: uuid.UUID) -> ChatSession | None:
         return self.sessions.get(session_id)
 
-    async def create_session(self, session_id: uuid.UUID, user_id: str | None = None) -> ChatSession:
+    async def create_session(
+        self, session_id: uuid.UUID, user_id: str | None = None
+    ) -> ChatSession:
         session = ChatSession(id=session_id, user_id=user_id)
         session.messages = []
         self.sessions[session_id] = session
@@ -43,6 +45,7 @@ class InMemoryChatRepository(IChatRepository):
     async def list_sessions(self, user_id: str | None = None) -> list[ChatSession]:
         return list(self.sessions.values())
 
+
 class FakeChatModel(BaseChatModel):
     def _generate(self, messages, stop, run_manager, **kwargs):
         raise NotImplementedError()
@@ -51,20 +54,15 @@ class FakeChatModel(BaseChatModel):
     def _llm_type(self) -> str:
         return "fake"
 
+
 @pytest.fixture
 def chat_service():
     repo = InMemoryChatRepository()
-    db = AsyncMock() # Fake UnitOfWork manager
+    db = AsyncMock()  # Fake UnitOfWork manager
     embedder = AsyncMock(spec=Embedder)
     llm = FakeChatModel()
 
-    return ChatService(
-        chat_repository=repo,
-        db=db,
-        embedder=embedder,
-        llm=llm,
-        search_tools=[]
-    )
+    return ChatService(chat_repository=repo, db=db, embedder=embedder, llm=llm, search_tools=[])
 
 
 @pytest.mark.asyncio

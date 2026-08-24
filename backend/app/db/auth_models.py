@@ -20,14 +20,20 @@ class User(Base):
     createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)  # noqa: N815
     updatedAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)  # noqa: N815
 
-    sessions: Mapped[list["Session"]] = relationship("Session", back_populates="user", cascade="all, delete-orphan")
-    accounts: Mapped[list["Account"]] = relationship("Account", back_populates="user", cascade="all, delete-orphan")
+    sessions: Mapped[list["Session"]] = relationship(
+        "Session", back_populates="user", cascade="all, delete-orphan"
+    )
+    accounts: Mapped[list["Account"]] = relationship(
+        "Account", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class Session(Base):
     __tablename__ = "session"
     id: Mapped[str] = mapped_column(String(255), primary_key=True)
-    userId: Mapped[str] = mapped_column(String(255), ForeignKey("user.id", ondelete="CASCADE"), nullable=False)  # noqa: N815
+    userId: Mapped[str] = mapped_column(
+        String(255), ForeignKey("user.id", ondelete="CASCADE"), nullable=False
+    )  # noqa: N815
     token: Mapped[str] = mapped_column(String(500), unique=True, nullable=False)
     expiresAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)  # noqa: N815
     ipAddress: Mapped[str | None] = mapped_column(Text, nullable=True)  # noqa: N815
@@ -41,7 +47,9 @@ class Session(Base):
 class Account(Base):
     __tablename__ = "account"
     id: Mapped[str] = mapped_column(String(255), primary_key=True)
-    userId: Mapped[str] = mapped_column(String(255), ForeignKey("user.id", ondelete="CASCADE"), nullable=False)  # noqa: N815
+    userId: Mapped[str] = mapped_column(
+        String(255), ForeignKey("user.id", ondelete="CASCADE"), nullable=False
+    )  # noqa: N815
     accountId: Mapped[str] = mapped_column(String(255), nullable=False)  # noqa: N815
     providerId: Mapped[str] = mapped_column(String(255), nullable=False)  # noqa: N815
     accessToken: Mapped[str | None] = mapped_column(Text, nullable=True)  # noqa: N815

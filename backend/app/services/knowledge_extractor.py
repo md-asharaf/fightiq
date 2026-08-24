@@ -17,18 +17,30 @@ class FighterExtraction(BaseModel):
     losses: int | None = Field(default=None, description="Total losses")
     draws: int | None = Field(default=None, description="Total draws")
     is_champion: bool = Field(default=False, description="Whether they are currently a champion")
-    title_defenses: int | None = Field(default=None, description="Number of successful title defenses")
-    championships: list[str] | None = Field(default=None, description="List of weight classes they have been champion in")
-    win_streak: int | None = Field(default=None, description="Current win streak, 0 if coming off a loss")
+    title_defenses: int | None = Field(
+        default=None, description="Number of successful title defenses"
+    )
+    championships: list[str] | None = Field(
+        default=None, description="List of weight classes they have been champion in"
+    )
+    win_streak: int | None = Field(
+        default=None, description="Current win streak, 0 if coming off a loss"
+    )
     team: str | None = Field(default=None, description="Current gym or team affiliation")
     stance: str | None = Field(default=None, description="Orthodox, Southpaw, or Switch")
     height_cm: float | None = Field(default=None, description="Height in centimeters")
     reach_cm: float | None = Field(default=None, description="Reach in centimeters")
     slpm: float | None = Field(default=None, description="Significant Strikes Landed per Minute")
-    str_acc: float | None = Field(default=None, description="Significant Striking Accuracy percentage (e.g. 50.5)")
+    str_acc: float | None = Field(
+        default=None, description="Significant Striking Accuracy percentage (e.g. 50.5)"
+    )
     sapm: float | None = Field(default=None, description="Significant Strikes Absorbed per Minute")
-    str_def: float | None = Field(default=None, description="Significant Striking Defense percentage")
-    td_avg: float | None = Field(default=None, description="Average Takedowns Landed per 15 minutes")
+    str_def: float | None = Field(
+        default=None, description="Significant Striking Defense percentage"
+    )
+    td_avg: float | None = Field(
+        default=None, description="Average Takedowns Landed per 15 minutes"
+    )
     td_acc: float | None = Field(default=None, description="Takedown Accuracy percentage")
     td_def: float | None = Field(default=None, description="Takedown Defense percentage")
     sub_avg: float | None = Field(default=None, description="Submission Average per 15 minutes")
@@ -41,8 +53,12 @@ class EventExtraction(BaseModel):
 
 
 class KnowledgeExtractionResult(BaseModel):
-    fighters: list[FighterExtraction] = Field(default_factory=list, description="Fighters extracted from the text")
-    events: list[EventExtraction] = Field(default_factory=list, description="Events extracted from the text")
+    fighters: list[FighterExtraction] = Field(
+        default_factory=list, description="Fighters extracted from the text"
+    )
+    events: list[EventExtraction] = Field(
+        default_factory=list, description="Events extracted from the text"
+    )
 
 
 class KnowledgeExtractor:
@@ -81,14 +97,18 @@ class KnowledgeExtractor:
                     data = event.model_dump()
                     if data.get("date"):
                         try:
-                            data["date"] = datetime.datetime.strptime(data["date"], "%Y-%m-%d").replace(tzinfo=datetime.UTC)
+                            data["date"] = datetime.datetime.strptime(
+                                data["date"], "%Y-%m-%d"
+                            ).replace(tzinfo=datetime.UTC)
                         except ValueError:
                             data["date"] = None
                     await self.repo.upsert_event(data)
 
             if result.fighters or result.events:
                 await self.repo.commit()
-                log.info(f"Successfully upserted {len(result.fighters)} fighters and {len(result.events)} events.")
+                log.info(
+                    f"Successfully upserted {len(result.fighters)} fighters and {len(result.events)} events."
+                )
             else:
                 log.info("No facts extracted.")
 

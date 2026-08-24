@@ -29,23 +29,33 @@ class Document(Base):
     __tablename__ = "documents"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
     )
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     source: Mapped[str] = mapped_column(String(1000), nullable=False, unique=True)
     category: Mapped[str] = mapped_column(
-        String(100), nullable=False, index=True,
+        String(100),
+        nullable=False,
+        index=True,
     )
     source_type: Mapped[str] = mapped_column(
-        String(50), nullable=False,
+        String(50),
+        nullable=False,
     )
     chunk_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     metadata_: Mapped[dict] = mapped_column(
-        "metadata", JSONB, nullable=False, default=dict,
+        "metadata",
+        JSONB,
+        nullable=False,
+        default=dict,
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False,
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -55,7 +65,9 @@ class Document(Base):
     )
 
     chunks: Mapped[list[Chunk]] = relationship(
-        "Chunk", back_populates="document", cascade="all, delete-orphan",
+        "Chunk",
+        back_populates="document",
+        cascade="all, delete-orphan",
     )
 
 
@@ -67,7 +79,9 @@ class Chunk(Base):
     __tablename__ = "chunks"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
     )
     document_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -77,14 +91,20 @@ class Chunk(Base):
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
     embedding: Mapped[list[float]] = mapped_column(
-        Vector(768), nullable=True,
+        Vector(768),
+        nullable=True,
     )
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     metadata_: Mapped[dict] = mapped_column(
-        "metadata", JSONB, nullable=False, default=dict,
+        "metadata",
+        JSONB,
+        nullable=False,
+        default=dict,
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False,
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
     )
 
     document: Mapped[Document] = relationship("Document", back_populates="chunks")
@@ -96,7 +116,9 @@ class QuizSession(Base):
     __tablename__ = "quiz_sessions"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
     )
     user_id: Mapped[str | None] = mapped_column(
         String(255), ForeignKey("user.id", ondelete="SET NULL"), nullable=True, index=True
@@ -104,16 +126,22 @@ class QuizSession(Base):
     topic: Mapped[str] = mapped_column(String(300), nullable=False)
     category: Mapped[str | None] = mapped_column(String(100), nullable=True)
     difficulty: Mapped[str] = mapped_column(
-        String(50), nullable=False, default="medium",
+        String(50),
+        nullable=False,
+        default="medium",
     )
     num_questions: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
     questions: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False,
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
     )
 
     results: Mapped[list[QuizResult]] = relationship(
-        "QuizResult", back_populates="session", cascade="all, delete-orphan",
+        "QuizResult",
+        back_populates="session",
+        cascade="all, delete-orphan",
     )
 
 
@@ -123,7 +151,9 @@ class QuizResult(Base):
     __tablename__ = "quiz_results"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
     )
     session_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -136,7 +166,9 @@ class QuizResult(Base):
     total_questions: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     score_percentage: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False,
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
     )
 
     session: Mapped[QuizSession] = relationship("QuizSession", back_populates="results")
@@ -148,17 +180,23 @@ class ChatSession(Base):
     __tablename__ = "chat_sessions"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
     )
     user_id: Mapped[str | None] = mapped_column(
         String(255), ForeignKey("user.id", ondelete="SET NULL"), nullable=True, index=True
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False,
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
     )
 
     messages: Mapped[list[ChatMessage]] = relationship(
-        "ChatMessage", back_populates="session", cascade="all, delete-orphan",
+        "ChatMessage",
+        back_populates="session",
+        cascade="all, delete-orphan",
     )
 
 
@@ -168,7 +206,9 @@ class ChatMessage(Base):
     __tablename__ = "chat_messages"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
     )
     session_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -180,7 +220,9 @@ class ChatMessage(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     sources: Mapped[list[dict]] = mapped_column(JSONB, nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False,
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
     )
 
     session: Mapped[ChatSession] = relationship("ChatSession", back_populates="messages")
@@ -192,13 +234,17 @@ class EvalRun(Base):
     __tablename__ = "eval_runs"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
     )
     dataset_name: Mapped[str] = mapped_column(String(200), nullable=False)
     overall_scores: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     question_results: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False,
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
     )
 
 
@@ -208,21 +254,27 @@ class SemanticToolCache(Base):
     __tablename__ = "semantic_tool_cache"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
     )
     query: Mapped[str] = mapped_column(Text, nullable=False)
     query_embedding: Mapped[list[float]] = mapped_column(
-        Vector(768), nullable=False,
+        Vector(768),
+        nullable=False,
     )
     tool_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     result_payload: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False,
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
     )
 
 
 class Fighter(Base):
     """Structured data about a UFC Fighter extracted from web searches."""
+
     __tablename__ = "fighters"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -248,18 +300,23 @@ class Fighter(Base):
     td_acc: Mapped[float | None] = mapped_column(Float, nullable=True)
     td_def: Mapped[float | None] = mapped_column(Float, nullable=True)
     sub_avg: Mapped[float | None] = mapped_column(Float, nullable=True)
-    last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    last_updated: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
 
 class Event(Base):
     """Structured data about a UFC Event extracted from web searches."""
+
     __tablename__ = "events"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    last_updated: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
 
 from app.db.auth_models import Account, Session, User, Verification  # noqa: E402, F401

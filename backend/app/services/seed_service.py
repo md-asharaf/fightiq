@@ -17,6 +17,7 @@ CATEGORY_MAP: dict[str, str] = {
     "rules": "rules",
 }
 
+
 class SeedService:
     def __init__(
         self,

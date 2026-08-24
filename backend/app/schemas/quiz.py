@@ -17,10 +17,14 @@ class Question(BaseModel):
 
     id: str = Field(description="Unique identifier for the question")
     text: str = Field(description="The question text")
-    options: list[QuestionOption] = Field(description="The available options. Exactly 4 options required.")
+    options: list[QuestionOption] = Field(
+        description="The available options. Exactly 4 options required."
+    )
     correct_option_id: str = Field(description="The ID of the correct option")
     explanation: str = Field(description="Explanation of why the correct option is correct")
-    sources: list[str] | None = Field(default=None, description="Titles or IDs of source documents used")
+    sources: list[str] | None = Field(
+        default=None, description="Titles or IDs of source documents used"
+    )
 
     @model_validator(mode="after")
     def validate_options(self) -> "Question":
@@ -45,9 +49,13 @@ class QuizGeneratedData(BaseModel):
 class QuizGenerateRequest(BaseModel):
     """Request to generate a new quiz."""
 
-    topic: str = Field(..., description="Topic of the quiz (e.g., 'Jon Jones career', 'UFC unified rules')")
+    topic: str = Field(
+        ..., description="Topic of the quiz (e.g., 'Jon Jones career', 'UFC unified rules')"
+    )
     difficulty: str = Field(default="medium", description="Difficulty: 'easy', 'medium', 'hard'")
-    num_questions: int = Field(default=5, ge=1, le=10, description="Number of questions to generate (1-10)")
+    num_questions: int = Field(
+        default=5, ge=1, le=10, description="Number of questions to generate (1-10)"
+    )
     category: str | None = Field(default=None, description="Optional category filter for retrieval")
     fighter: str | None = Field(default=None, description="Optional fighter filter for retrieval")
 
@@ -77,6 +85,7 @@ class QuizSessionRead(BaseModel):
                 data["questions"] = sanitized_questions
         elif hasattr(data, "questions"):
             import copy
+
             sanitized_questions = []
             for q in data.questions:
                 safe_q = copy.deepcopy(q)
@@ -104,7 +113,9 @@ class QuizSubmitRequest(BaseModel):
     """Request to submit answers for a quiz session."""
 
     session_id: uuid.UUID
-    answers: dict[str, str] = Field(..., description="Mapping of question ID to the chosen option ID")
+    answers: dict[str, str] = Field(
+        ..., description="Mapping of question ID to the chosen option ID"
+    )
 
 
 class QuestionResult(BaseModel):

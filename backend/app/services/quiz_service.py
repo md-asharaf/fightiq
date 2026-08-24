@@ -13,7 +13,13 @@ from app.utils.quiz_generator import generate_quiz
 
 
 class QuizService:
-    def __init__(self, quiz_repository: IQuizRepository, chunk_repository, embedder: Embedder, llm: BaseChatModel):
+    def __init__(
+        self,
+        quiz_repository: IQuizRepository,
+        chunk_repository,
+        embedder: Embedder,
+        llm: BaseChatModel,
+    ):
         self.repo = quiz_repository
         self.chunk_repo = chunk_repository
         self.embedder = embedder
@@ -77,8 +83,11 @@ class QuizService:
             raise ResourceNotFoundError(f"Quiz result for session '{session_id}' not found")
         return result
 
-    async def get_detailed_result(self, session_id, user_id: str | None = None) -> QuizSubmitResponse:
+    async def get_detailed_result(
+        self, session_id, user_id: str | None = None
+    ) -> QuizSubmitResponse:
         from app.utils.quiz_evaluator import build_quiz_submit_response
+
         session = await self.get_session(session_id, user_id=user_id)
         result_db = await self.get_result(session_id)
 

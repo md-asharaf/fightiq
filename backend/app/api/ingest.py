@@ -5,9 +5,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
 
-from app.core.dependencies import get_ingestion_service, get_seed_service
+from app.core.dependencies import get_ingestion_service, get_seed_service, require_admin
 from app.core.exceptions import ValidationError
 from app.core.logging import get_logger
+from app.db.auth_models import User
 from app.schemas.document import IngestResponse, IngestScrapeRequest, IngestSeedRequest
 from app.services.ingestion_service import IngestionService
 from app.services.seed_service import SeedService
@@ -32,6 +33,7 @@ SeedServiceDep = Annotated[SeedService, Depends(get_seed_service)]
 async def ingest_seed(
     request: IngestSeedRequest,
     seed_service: SeedServiceDep,
+    admin: User = Depends(require_admin),
 ) -> IngestResponse:
     log.info("Seed ingestion endpoint triggered", force=request.force)
 
@@ -63,6 +65,7 @@ async def ingest_file(
         default="general",
         description="Knowledge category: fighters | events | history | rules | general",
     ),
+    admin: User = Depends(require_admin),
 ) -> IngestResponse:
     try:
         content = await file.read()
@@ -78,7 +81,9 @@ async def ingest_file(
         )
     except ValidationError as e:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if "Invalid" in str(e) or "Unsupported" in str(e) else status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
+            if "Invalid" in str(e) or "Unsupported" in str(e)
+            else status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
@@ -94,6 +99,7 @@ async def ingest_file(
 async def ingest_scrape(
     request: IngestScrapeRequest,
     ingestion_service: IngestionServiceDep,
+    admin: User = Depends(require_admin),
 ):
     log.info("Scrape requested", topics=request.topics, category=request.category)
 

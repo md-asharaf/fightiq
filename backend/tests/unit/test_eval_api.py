@@ -17,6 +17,7 @@ async def override_get_db():
 # Mock get_embedder
 def override_get_embedder():
     from unittest.mock import MagicMock
+
     mock = MagicMock()
     mock.aembed_query = AsyncMock(return_value=[0.1] * 1536)
     return mock
@@ -29,7 +30,8 @@ app.dependency_overrides[get_embedder] = override_get_embedder
 @pytest.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test",
+        transport=ASGITransport(app=app),
+        base_url="http://test",
     ) as c:
         yield c
 

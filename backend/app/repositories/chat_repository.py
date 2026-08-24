@@ -13,11 +13,17 @@ class ChatRepository(BaseRepository[ChatSession]):
         super().__init__(ChatSession, session)
 
     async def get_session(self, session_id: uuid.UUID) -> ChatSession | None:
-        stmt = select(ChatSession).where(ChatSession.id == session_id).options(selectinload(ChatSession.messages))
+        stmt = (
+            select(ChatSession)
+            .where(ChatSession.id == session_id)
+            .options(selectinload(ChatSession.messages))
+        )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create_session(self, session_id: uuid.UUID, user_id: str | None = None) -> ChatSession:
+    async def create_session(
+        self, session_id: uuid.UUID, user_id: str | None = None
+    ) -> ChatSession:
         chat_session = ChatSession(id=session_id, user_id=user_id)
         self.session.add(chat_session)
         await self.session.commit()

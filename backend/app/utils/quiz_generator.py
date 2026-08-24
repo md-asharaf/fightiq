@@ -48,4 +48,5 @@ async def generate_quiz(
     )
 
     from typing import cast
+
     return cast("QuizGeneratedData", result)

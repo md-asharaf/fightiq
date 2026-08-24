@@ -54,29 +54,24 @@ app = FastAPI(
 
 @app.exception_handler(ResourceNotFoundError)
 async def resource_not_found_handler(_request: Request, exc: ResourceNotFoundError):
-    return JSONResponse(
-        status_code=404,
-        content={"detail": exc.message}
-    )
+    return JSONResponse(status_code=404, content={"detail": exc.message})
+
 
 @app.exception_handler(ValidationError)
 async def validation_error_handler(_request: Request, exc: ValidationError):
-    return JSONResponse(
-        status_code=422,
-        content={"detail": exc.message}
-    )
+    return JSONResponse(status_code=422, content={"detail": exc.message})
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(_request: Request, exc: Exception):
+    log.error("Unhandled exception occurred", exc_info=exc)
     content = {"detail": "Internal server error"}
     if settings.environment == "development":
         content["detail"] = str(exc)
         content["traceback"] = traceback.format_exc()
 
-    return JSONResponse(
-        status_code=500,
-        content=content
-    )
+    return JSONResponse(status_code=500, content=content)
+
 
 app.add_middleware(
     CORSMiddleware,

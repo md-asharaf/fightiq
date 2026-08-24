@@ -34,7 +34,7 @@ class EvalService:
         db: AsyncSession,
         embedder: Embedder,
         llm: BaseChatModel,
-        agent_factory: AgentFactory
+        agent_factory: AgentFactory,
     ):
         self.repo = eval_repository
         self.db = db
@@ -95,14 +95,19 @@ class EvalService:
                 context_recall,
             ],
             llm=self.llm,
-            embeddings=self.embedder.langchain_embeddings, # Ragas can take our standard Langchain Embeddings instance
+            embeddings=self.embedder.langchain_embeddings,  # Ragas can take our standard Langchain Embeddings instance
         )
         df = result.to_pandas()  # type: ignore[union-attr]
         question_results = []
 
         for i in range(len(df)):
             metrics = []
-            for metric_name in ["faithfulness", "answer_relevancy", "context_precision", "context_recall"]:
+            for metric_name in [
+                "faithfulness",
+                "answer_relevancy",
+                "context_precision",
+                "context_recall",
+            ]:
                 score = float(df.iloc[i].get(metric_name, 0.0))
                 if math.isnan(score):
                     score = 0.0
@@ -142,7 +147,7 @@ class EvalService:
         eval_run = await self.repo.create_eval_run(
             dataset_name=result.dataset_name,
             overall_scores=result.overall_scores,
-            question_results=[q.model_dump() for q in result.question_results]
+            question_results=[q.model_dump() for q in result.question_results],
         )
         await self.db.commit()
 

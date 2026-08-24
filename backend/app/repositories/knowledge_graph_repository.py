@@ -11,20 +11,17 @@ class KnowledgeGraphRepository(BaseRepository[Fighter]):
     def __init__(self, session: AsyncSession):
         super().__init__(Fighter, session)
 
-    async def _upsert_model(self, model_class: Any, data: dict[str, Any], index_elements: list[str]) -> None:
+    async def _upsert_model(
+        self, model_class: Any, data: dict[str, Any], index_elements: list[str]
+    ) -> None:
         """Generic upsert method for SQLAlchemy models."""
         stmt = insert(model_class).values(**data)
-        update_dict = {
-            c.name: c
-            for c in stmt.excluded
-            if c.name not in ["id", *index_elements]
-        }
+        update_dict = {c.name: c for c in stmt.excluded if c.name not in ["id", *index_elements]}
         if not update_dict:
             update_stmt = stmt.on_conflict_do_nothing(index_elements=index_elements)
         else:
             update_stmt = stmt.on_conflict_do_update(
-                index_elements=index_elements,
-                set_=update_dict
+                index_elements=index_elements, set_=update_dict
             )
         await self.session.execute(update_stmt)
 

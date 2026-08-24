@@ -3,12 +3,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 
-from app.core.dependencies import get_document_service
+from app.core.dependencies import get_document_service, require_admin
+from app.db.auth_models import User
 from app.schemas.chunk import SimilaritySearchRequest, SimilaritySearchResponse
 from app.schemas.document import DocumentListResponse, DocumentRead
 from app.services.document_service import DocumentService
 
 router = APIRouter()
+
 
 @router.get(
     "",
@@ -22,6 +24,7 @@ async def list_documents(
     source_type: Annotated[str | None, Query(description="Filter by source type")] = None,
     page: Annotated[int, Query(ge=1, description="Page number (1-indexed)")] = 1,
     page_size: Annotated[int, Query(ge=1, le=100, description="Items per page")] = 20,
+    admin: User = Depends(require_admin),
 ) -> DocumentListResponse:
     return await document_service.list_documents(category, source_type, page, page_size)
 
@@ -34,6 +37,7 @@ async def list_documents(
 async def get_document(
     document_id: uuid.UUID,
     document_service: Annotated[DocumentService, Depends(get_document_service)],
+    admin: User = Depends(require_admin),
 ) -> DocumentRead:
     return await document_service.get_document(document_id)
 
@@ -47,6 +51,7 @@ async def get_document(
 async def delete_document(
     document_id: uuid.UUID,
     document_service: Annotated[DocumentService, Depends(get_document_service)],
+    admin: User = Depends(require_admin),
 ) -> None:
     await document_service.delete_document(document_id)
 
@@ -63,5 +68,6 @@ async def delete_document(
 async def semantic_search(
     request: SimilaritySearchRequest,
     document_service: Annotated[DocumentService, Depends(get_document_service)],
+    admin: User = Depends(require_admin),
 ) -> SimilaritySearchResponse:
     return await document_service.search(request)

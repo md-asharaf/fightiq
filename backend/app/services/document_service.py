@@ -19,13 +19,18 @@ log = get_logger(__name__)
 _VALID_CATEGORIES = {"fighters", "events", "history", "rules", "general"}
 _VALID_SOURCE_TYPES = {"seed", "upload", "scraped"}
 
+
 class DocumentService:
-    def __init__(self, document_repository: IDocumentRepository, db: AsyncSession, embedder: Embedder):
+    def __init__(
+        self, document_repository: IDocumentRepository, db: AsyncSession, embedder: Embedder
+    ):
         self.repo = document_repository
         self.db = db
         self.embedder = embedder
 
-    async def list_documents(self, category: str | None, source_type: str | None, page: int, page_size: int) -> DocumentListResponse:
+    async def list_documents(
+        self, category: str | None, source_type: str | None, page: int, page_size: int
+    ) -> DocumentListResponse:
         if category and category not in _VALID_CATEGORIES:
             raise ValidationError(f"Invalid category. Allowed: {sorted(_VALID_CATEGORIES)}")
         if source_type and source_type not in _VALID_SOURCE_TYPES:
