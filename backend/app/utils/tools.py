@@ -63,6 +63,7 @@ class ExaSearchProvider:
             type=search_type,  # 'neural' or 'keyword'
             use_autoprompt=True,
             num_results=num_results,
+            text_contents_options={"highlights": True},
         )
 
         # ExaSearchRetriever supports ainvoke

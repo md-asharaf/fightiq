@@ -124,9 +124,9 @@ class ChatService:
                         payload = json.dumps({"type": "sources", "sources": citations})
                         yield f"data: {payload}\n\n"
                 elif kind == "on_retriever_end":
-                    docs: Any = event["data"].get("output", [])
-                    if isinstance(docs, list):
-                        citations = extract_citations(docs)
+                    retriever_docs: Any = event["data"].get("output", [])
+                    if isinstance(retriever_docs, list):
+                        citations = extract_citations(retriever_docs)
                         sources.extend(citations)
                         payload = json.dumps({"type": "sources", "sources": citations})
                         yield f"data: {payload}\n\n"

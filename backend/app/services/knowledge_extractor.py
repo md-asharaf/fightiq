@@ -88,8 +88,11 @@ class KnowledgeExtractor:
                 f"Extract structured facts about UFC/MMA fighters and events from the following text.\n"
                 f"Query that generated this text: {query}\n\n"
                 f"TEXT:\n{raw_web_content}\n\n"
-                "If there are no concrete, objective facts about fighters or events, return empty lists. "
-                "Do not extract opinions or unverified rumors."
+                "CRITICAL INSTRUCTIONS:\n"
+                "1. ONLY extract the PRIMARY subjects (fighters/events) that the text is actually about.\n"
+                "2. DO NOT extract every single opponent listed in fight history tables or passing mentions.\n"
+                "3. If there are no concrete, objective facts about the main subjects, return empty lists.\n"
+                "4. Do not extract opinions or unverified rumors."
             )
 
             result = cast(KnowledgeExtractionResult, await structured_llm.ainvoke(prompt))

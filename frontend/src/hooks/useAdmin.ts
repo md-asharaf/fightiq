@@ -3,15 +3,18 @@ import { fetchApi, uploadFile } from "@/lib/api";
 import { Document } from "@/types";
 
 import { useCallback } from "react";
+import { useSession } from "@/lib/auth-client";
 
 export function useAdmin(page: number = 1, pageSize: number = 10) {
   const queryClient = useQueryClient();
+  const { data: session, isPending: sessionLoading } = useSession();
 
   const { data: documentsData, isLoading, isFetching, refetch: loadDocuments } = useQuery<{ items: Document[], total: number }>({
     queryKey: ["documents", page, pageSize],
     queryFn: async () => {
       return await fetchApi(`/documents?page=${page}&page_size=${pageSize}`);
     },
+    enabled: !!session && session.user.role === "admin" && !sessionLoading,
   });
 
   const documents = documentsData?.items || [];
@@ -31,20 +34,7 @@ export function useAdmin(page: number = 1, pageSize: number = 10) {
 
   const { mutateAsync: deleteMutateAsync } = useMutation({
     mutationFn: (id: string) => fetchApi(`/documents/${id}`, { method: "DELETE" }),
-    onMutate: async (deletedId) => {
-      await queryClient.cancelQueries({ queryKey: ["documents"] });
-      const previousDocs = queryClient.getQueryData<Document[]>(["documents"]);
-      queryClient.setQueryData<Document[]>(["documents"], (old) => 
-        old ? old.filter((doc) => doc.id !== deletedId) : []
-      );
-      return { previousDocs };
-    },
-    onError: (err, deletedId, context) => {
-      if (context?.previousDocs) {
-        queryClient.setQueryData(["documents"], context.previousDocs);
-      }
-    },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
     },
   });

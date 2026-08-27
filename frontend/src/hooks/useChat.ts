@@ -60,7 +60,6 @@ export function useChat() {
     }
   }
 
-  // 1. Guest Chat Persistence
   useGuestChat(
     session,
     sessionLoading,
@@ -73,7 +72,6 @@ export function useChat() {
     updateUrlSession
   );
 
-  // 2. Chat History (if resuming a session)
   useChatHistory(
     isInitializing,
     sessionLoading,
@@ -84,10 +82,8 @@ export function useChat() {
     setIsInitializing
   );
 
-  // 3. Chat Sessions List
   const { sessions, loadingSessions } = useChatSessions(session, sessionLoading);
 
-  // 4. Chat Streaming
   const { handleSend: handleSendStream, handleStop } = useChatStream(
     sessionId,
     setMessages,
@@ -115,7 +111,7 @@ export function useChat() {
     }
     const textToSend = typeof message === "string" ? message : "";
     if (!textToSend.trim() || isLoading) return;
-    
+
     handleSendStream(textToSend);
   }, [isLoading, handleSendStream]);
 

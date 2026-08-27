@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { fetchApi } from "@/lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchApi, deleteSession } from "@/lib/api";
 import { ChatSessionPreview } from "@/types";
 
 export function useChatSessions(session: unknown, sessionLoading: boolean) {
@@ -16,5 +16,17 @@ export function useChatSessions(session: unknown, sessionLoading: boolean) {
     enabled: !!session && !sessionLoading,
   });
 
-  return { sessions, loadingSessions };
+  const queryClient = useQueryClient();
+
+  const { mutate: deleteSessionMutate, isPending: isDeleting } = useMutation({
+    mutationFn: deleteSession,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat_sessions"] });
+    },
+    onError: (error) => {
+      console.error("Failed to delete session:", error);
+    }
+  });
+
+  return { sessions, loadingSessions, deleteSessionMutate, isDeleting };
 }

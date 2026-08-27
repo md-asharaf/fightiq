@@ -49,19 +49,19 @@ export function QuizTakingView({ session, onSubmit, evaluating }: QuizTakingView
   return (
     <div className="flex-1 bg-background text-foreground min-h-full">
       <div className="container mx-auto p-4 md:p-8 max-w-3xl space-y-8 pb-32 pt-12">
-        <div className="flex justify-between items-center mb-10 border-b border-border pb-6">
+        <div className="flex flex-col md:flex-row gap-4 md:justify-between md:items-center mb-10 border-b border-border pb-6">
           <div>
             <h1 className="text-4xl font-bold tracking-tighter text-foreground">Quiz Engine</h1>
             <p className="text-muted-foreground font-bold text-sm mt-2">{session.topic} • {session.difficulty}</p>
           </div>
-          <div className="text-sm font-bold bg-card border border-border px-4 py-2 rounded-md text-primary">
+          <div className="text-sm font-bold bg-card border border-border px-4 py-2 rounded-none text-primary w-fit">
             {Object.keys(answers).length} / {session.questions.length} Answered
           </div>
         </div>
 
         <div className="space-y-10">
           {session.questions.map((q, idx) => (
-            <Card key={q.id} className="bg-card border-border rounded-xl overflow-hidden shadow-sm">
+            <Card key={q.id} className="bg-card border-border rounded-none shadow-sm">
               <CardHeader className="bg-muted/50 border-b border-border py-6">
                 <CardTitle className="text-xl text-foreground font-medium leading-relaxed">
                   <span className="text-primary font-bold mr-3">{idx + 1}.</span> {q.text}

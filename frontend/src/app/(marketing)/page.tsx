@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -162,23 +163,23 @@ export default function Home() {
               Fight<span className="text-primary">IQ</span>
             </span>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <span className="text-xs text-muted-foreground font-bold">Powered By</span>
-            <div className="flex items-center space-x-6 opacity-70 grayscale hover:grayscale-0 transition-all duration-300">
+            <div className="flex flex-wrap justify-center items-center gap-4 opacity-70 grayscale hover:grayscale-0 transition-all duration-300">
               {/* Next.js */}
               <div className="flex items-center space-x-2" title="Next.js">
-                <img src="https://cdn.simpleicons.org/nextdotjs/black" className="h-5 w-5 dark:invert" alt="Next.js Logo" />
+                <Image src="https://cdn.simpleicons.org/nextdotjs/black" width={20} height={20} unoptimized className="dark:invert" alt="Next.js Logo" />
                 <span className="font-semibold text-sm">Next.js</span>
               </div>
               {/* FastAPI */}
               <div className="flex items-center space-x-2" title="FastAPI">
-                <img src="https://cdn.simpleicons.org/fastapi/009688" className="h-6 w-auto" alt="FastAPI Logo" />
+                <Image src="https://cdn.simpleicons.org/fastapi/009688" width={24} height={24} unoptimized alt="FastAPI Logo" />
                 <span className="font-semibold text-sm">FastAPI</span>
               </div>
               {/* Gemini */}
               <div className="flex items-center space-x-2" title="Google Gemini">
-                <img src="https://cdn.simpleicons.org/googlegemini/8E75B2" className="h-5 w-auto" alt="Gemini Logo" />
+                <Image src="https://cdn.simpleicons.org/googlegemini/8E75B2" width={20} height={20} unoptimized alt="Gemini Logo" />
                 <span className="font-semibold text-sm">Gemini</span>
               </div>
               {/* Groq */}

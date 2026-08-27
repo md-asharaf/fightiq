@@ -34,7 +34,7 @@ export function EvalDashboardView() {
 
   return (
     <div className="container mx-auto p-4 md:p-8 max-w-6xl space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row gap-4 md:justify-between md:items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">RAG Evaluation Dashboard</h1>
           <p className="text-muted-foreground">Monitor the quality of the AI responses using Ragas metrics.</p>
@@ -75,7 +75,7 @@ export function EvalDashboardView() {
           <CardDescription>Historical performance of the RAG system against the golden dataset.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border border-border">
+          <div className="rounded-none border border-border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

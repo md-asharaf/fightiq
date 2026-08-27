@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrainCircuit, Loader2 } from "lucide-react";
+import { useSession } from "@/lib/auth-client";
 import { useQuizList } from "@/hooks/useQuiz";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ const difficultyMeta = {
 
 export function QuizSetupView() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { sessions, loadingSessions, generateQuiz } = useQuizList();
   const [loading, setLoading] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState("intermediate");
@@ -109,7 +111,7 @@ export function QuizSetupView() {
                     </SelectContent>
                   </Select>
                   
-                  <div className={`mt-4 p-4 text-sm border-l-4 rounded-r-md bg-muted/20 ${difficultyMeta[selectedDifficulty as keyof typeof difficultyMeta].color}`}>
+                  <div className={`mt-4 p-4 text-sm border-l-4 rounded-none bg-muted/20 ${difficultyMeta[selectedDifficulty as keyof typeof difficultyMeta].color}`}>
                     <h4 className="font-bold mb-1 flex items-center gap-2">
                       {difficultyMeta[selectedDifficulty as keyof typeof difficultyMeta].icon}
                       {selectedDifficulty.charAt(0).toUpperCase() + selectedDifficulty.slice(1)} Mode
@@ -122,8 +124,10 @@ export function QuizSetupView() {
               </form>
             </CardContent>
             <CardFooter className="bg-muted/30 pt-6 border-t border-border">
-              <Button type="submit" form="quiz-form" disabled={loading} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-14 font-bold rounded-none text-lg">
-                {loading ? (
+              <Button type="submit" form="quiz-form" disabled={loading || !session} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-14 font-bold rounded-none text-lg">
+                {!session ? (
+                  "Login to Generate Quiz"
+                ) : loading ? (
                   <>
                     <Loader2 className="mr-3 h-5 w-5 animate-spin" /> Generating...
                   </>
@@ -140,7 +144,7 @@ export function QuizSetupView() {
               <CardDescription className="text-muted-foreground font-medium mt-2">Jump back into a quiz or review your results.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 p-0">
-              <div className="border-0">
+              <div className="border-0 overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border hover:bg-transparent">
@@ -161,7 +165,7 @@ export function QuizSetupView() {
                     ) : sessions.length === 0 ? (
                       <TableRow className="border-0 hover:bg-transparent">
                         <TableCell colSpan={3} className="text-center py-12 text-muted-foreground font-medium">
-                          No recent quizzes found.
+                          {!session ? "Login to view your recent quizzes." : "No recent quizzes found."}
                         </TableCell>
                       </TableRow>
                     ) : (

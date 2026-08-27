@@ -34,17 +34,7 @@ export function UserMenu({ isSidebar = false }: { isSidebar?: boolean }) {
 
   if (!session) {
     if (isSidebar) {
-      return (
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton render={
-              <Link href="/login" className="w-full flex justify-center font-semibold">
-                Log in
-              </Link>
-            } />
-          </SidebarMenuItem>
-        </SidebarMenu>
-      );
+      return null;
     }
     return (
       <div className="flex items-center space-x-2">
@@ -83,7 +73,7 @@ export function UserMenu({ isSidebar = false }: { isSidebar?: boolean }) {
     : "U";
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       {isSidebar ? (
         <SidebarMenu>
           <SidebarMenuItem>
@@ -113,7 +103,7 @@ export function UserMenu({ isSidebar = false }: { isSidebar?: boolean }) {
           </Avatar>
         </DropdownMenuTrigger>
       )}
-      <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg" align="end" side={isSidebar ? "right" : "bottom"} sideOffset={4}>
+      <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg" align={isSidebar ? "start" : "end"} side="bottom" sideOffset={4}>
         <div className="px-2 py-1.5 text-sm font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{session.user.name}</p>

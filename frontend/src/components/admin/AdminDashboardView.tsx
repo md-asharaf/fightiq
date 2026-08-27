@@ -90,11 +90,11 @@ export function AdminDashboardView() {
   };
 
   return (
-    <div className="container mx-auto p-8 max-w-7xl space-y-8">
+    <div className="container mx-auto p-4 md:p-8 max-w-7xl space-y-6 md:space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Knowledge Base Admin</h1>
-          <p className="text-muted-foreground">Manage UFC documents, trigger seeding, and run web scrapers.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Knowledge Base Admin</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Manage UFC documents, trigger seeding, and run web scrapers.</p>
         </div>
 
         <AlertDialog>
@@ -206,7 +206,7 @@ export function AdminDashboardView() {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border border-border">
+          <div className="rounded-none border border-border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -281,7 +281,7 @@ export function AdminDashboardView() {
                     size="sm" 
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1 || isFetching}
-                    className="h-8 w-8 p-0"
+                    className="h-8 w-8 p-0 rounded-none"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
@@ -290,7 +290,7 @@ export function AdminDashboardView() {
                     size="sm" 
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages || isFetching}
-                    className="h-8 w-8 p-0"
+                    className="h-8 w-8 p-0 rounded-none"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>

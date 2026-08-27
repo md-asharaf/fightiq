@@ -1,13 +1,12 @@
 "use client";
 
-import { ChatSessionPreview } from "@/types";
-import { MessageSquare, PlusCircle, LogIn, Trash2 } from "lucide-react";
+import Image from "next/image";
+import { MessageSquare, PlusCircle, LogIn, Trash2, HelpCircle, BarChart2, ShieldCheck } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchApi, deleteSession } from "@/lib/api";
 import { useState } from "react";
+import { useChatSessions } from "@/hooks/chat/useChatSessions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,46 +36,27 @@ import { Button } from "@/components/ui/button";
 export function AppSidebar() {
   const { data: session, isPending: sessionLoading } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeSessionId = searchParams.get("session") || "";
-  const queryClient = useQueryClient();
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
 
-  const { data: sessions = [], isLoading: loading } = useQuery<ChatSessionPreview[]>({
-    queryKey: ["chat_sessions"],
-    queryFn: async () => {
-      try {
-        return await fetchApi("/chat/sessions");
-      } catch (e) {
-        console.error("Failed to fetch sessions:", e);
-        return [];
-      }
-    },
-    enabled: !!session && !sessionLoading,
-  });
+  const { sessions, loadingSessions, deleteSessionMutate, isDeleting } = useChatSessions(session, sessionLoading);
 
   const handleNew = () => {
     router.push("/chat");
   };
 
-  const { mutate: deleteSessionMutate, isPending: isDeleting } = useMutation({
-    mutationFn: deleteSession,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["chat_sessions"] });
-      if (activeSessionId === sessionToDelete) {
-        router.push("/chat");
-      }
-      setSessionToDelete(null);
-    },
-    onError: (error) => {
-      console.error("Failed to delete session:", error);
-      setSessionToDelete(null);
-    }
-  });
-
   const confirmDelete = () => {
     if (sessionToDelete) {
-      deleteSessionMutate(sessionToDelete);
+      deleteSessionMutate(sessionToDelete, {
+        onSuccess: () => {
+          if (activeSessionId === sessionToDelete) {
+            router.push("/chat");
+          }
+          setSessionToDelete(null);
+        }
+      });
     }
   };
 
@@ -84,7 +64,7 @@ export function AppSidebar() {
     <Sidebar className="border-border">
       <SidebarHeader className="h-14 flex items-center justify-center border-b border-border px-4 py-0 shrink-0 flex-row">
         <Link href="/" className="flex items-center w-full justify-center">
-          <img src="/favicon.ico" alt="FightIQ Logo" className="h-10 w-auto object-contain" />
+          <Image src="/favicon.ico" alt="FightIQ Logo" width={40} height={40} className="object-contain" />
         </Link>
       </SidebarHeader>
       <SidebarContent className="px-4 pt-4">
@@ -95,6 +75,50 @@ export function AppSidebar() {
           <PlusCircle className="h-5 w-5" />
           New Chat
         </Button>
+        <SidebarGroup>
+          <SidebarGroupLabel>Platform</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={pathname?.startsWith("/chat")}>
+                  <Link href="/chat" className="flex items-center space-x-3">
+                    <MessageSquare className="h-4 w-4" />
+                    <span>Chat</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={pathname?.startsWith("/quiz")}>
+                  <Link href="/quiz" className="flex items-center space-x-3">
+                    <HelpCircle className="h-4 w-4" />
+                    <span>Quiz</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              {session?.user?.role === "admin" && (
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton isActive={pathname?.startsWith("/eval")}>
+                      <Link href="/eval" className="flex items-center space-x-3">
+                        <BarChart2 className="h-4 w-4" />
+                        <span>Eval</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton isActive={pathname?.startsWith("/admin")}>
+                      <Link href="/admin" className="flex items-center space-x-3">
+                        <ShieldCheck className="h-4 w-4" />
+                        <span>Admin Dashboard</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         <SidebarGroup>
           <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -117,7 +141,7 @@ export function AppSidebar() {
                   Sign In
                 </Button>
               </div>
-            ) : loading ? (
+            ) : loadingSessions ? (
               <div className="text-center py-4 text-muted-foreground text-sm font-medium animate-pulse">Loading history...</div>
             ) : sessions.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground text-sm font-medium">No previous chats</div>
@@ -133,8 +157,8 @@ export function AppSidebar() {
                         <span className="text-sm font-medium truncate flex-1 text-left">{s.preview_text}</span>
                       </Link>
                     </SidebarMenuButton>
-                    <SidebarMenuAction 
-                      showOnHover 
+                    <SidebarMenuAction
+                      showOnHover
                       onClick={() => setSessionToDelete(s.session_id)}
                       title="Delete chat"
                     >

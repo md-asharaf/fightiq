@@ -2,13 +2,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi } from "@/lib/api";
 import { QuizSession, QuizResult } from "@/types";
 import { useCallback } from "react";
+import { useSession } from "@/lib/auth-client";
 
 export function useQuizList() {
   const queryClient = useQueryClient();
+  const { data: session, isPending: sessionLoading } = useSession();
 
   const { data: sessions = [], isLoading } = useQuery<QuizSession[]>({
     queryKey: ["quiz-sessions"],
     queryFn: () => fetchApi("/quiz/sessions"),
+    enabled: !!session && !sessionLoading,
   });
 
   const { mutateAsync: generateMutateAsync } = useMutation({
@@ -33,8 +36,7 @@ export function useQuizList() {
 
 export function useQuizSession(sessionId: string) {
   const queryClient = useQueryClient();
-
-  const { data: session, isLoading: sessionLoading, refetch: refetchSession } = useQuery<QuizSession>({
+  const { data: session, isLoading: quizSessionLoading, refetch: refetchSession } = useQuery<QuizSession>({
     queryKey: ["quiz-session", sessionId],
     queryFn: () => fetchApi(`/quiz/sessions/${sessionId}`),
     enabled: !!sessionId,
@@ -63,7 +65,7 @@ export function useQuizSession(sessionId: string) {
   return {
     session,
     result,
-    loading: sessionLoading || (session?.status === "completed" && resultLoading),
+    loading: quizSessionLoading || (session?.status === "completed" && resultLoading),
     loadQuiz: refetchSession,
     submitQuiz: submitQuizMutateAsync,
   };

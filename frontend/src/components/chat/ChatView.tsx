@@ -1,9 +1,8 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import { Send, StopCircle } from "lucide-react";
 import { ChatMessage } from "@/components/chat/ChatMessage";
-import { Textarea } from "@/components/ui/textarea";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useChat } from "@/hooks/useChat";
 import { ChatInput } from "@/components/chat/ChatInput";
@@ -26,7 +25,7 @@ export function ChatView() {
   return (
     <div className="flex-1 flex flex-col relative h-full w-full bg-background">
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto pb-40 px-4 md:px-0">
+      <div className="flex-1 overflow-y-auto pb-32">
         <div className="flex flex-col w-full max-w-3xl mx-auto pt-8">
           {(isLoading || sessionLoading) && messages.length === 0 && (
             <div className="flex flex-col items-center justify-center mt-32 space-y-4">
@@ -39,7 +38,7 @@ export function ChatView() {
             <div className="flex flex-col items-center justify-center mt-20 space-y-8">
               <div className="flex flex-col items-center text-center space-y-4 opacity-80">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2">
-                  <img src="/favicon.ico" alt="FightIQ Logo" className="h-10 w-auto object-contain" />
+                  <Image src="/favicon.ico" alt="FightIQ Logo" width={40} height={40} className="object-contain" />
                 </div>
                 <h2 className="text-xl font-bold text-foreground tracking-tight">How can I help you?</h2>
                 <p className="text-sm text-muted-foreground">Ask me about UFC history, fighter stats, or unified rules.</p>
@@ -74,7 +73,7 @@ export function ChatView() {
               <div className="flex w-full max-w-3xl space-x-6 px-4">
                 <div className="shrink-0 flex flex-col items-center mt-1">
                   <div className="w-8 h-8 shadow-sm overflow-visible relative flex items-center justify-center rounded-full">
-                    <img src="/favicon.ico" alt="FightIQ Logo" className="h-8 w-auto object-contain animate-pulse" />
+                    <Image src="/favicon.ico" alt="FightIQ Logo" width={32} height={32} className="object-contain animate-pulse" />
                   </div>
                 </div>
                 <div className="flex items-center text-sm font-medium text-muted-foreground pt-1">

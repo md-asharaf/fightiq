@@ -48,7 +48,7 @@ export function ChatInput({ isLoading, onSend, onStop }: ChatInputProps) {
   };
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background to-transparent pt-10 pb-8 px-4">
+    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background to-transparent pt-10 pb-4 md:pb-8 px-4 md:px-6">
       <div className="max-w-3xl mx-auto">
         <form
           onSubmit={handleSend}
@@ -89,7 +89,7 @@ export function ChatInput({ isLoading, onSend, onStop }: ChatInputProps) {
             )}
           </div>
         </form>
-        <div className="text-center mt-4 text-[12px] font-semibold text-muted-foreground opacity-70">
+        <div className="text-center mt-3 md:mt-4 text-[10px] md:text-[12px] font-semibold text-muted-foreground opacity-70">
           FightIQ can make mistakes. Verify important information.
         </div>
       </div>

@@ -16,7 +16,7 @@ export function QuizResultView({ session, result }: { session: QuizSession; resu
   return (
     <div className="flex-1 bg-background text-foreground min-h-full">
       <div className="container mx-auto p-4 md:p-8 max-w-4xl space-y-12 pb-32 pt-12">
-        <Card className="bg-card border-primary/30 text-center py-12 rounded-xl shadow-sm relative overflow-hidden">
+        <Card className="bg-card border-primary/30 text-center py-12 rounded-none shadow-sm relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-transparent pointer-events-none" />
           <CardHeader className="relative z-10">
             <CardTitle className="text-4xl md:text-5xl font-bold tracking-tighter text-foreground">Fight IQ Score</CardTitle>
@@ -48,7 +48,7 @@ export function QuizResultView({ session, result }: { session: QuizSession; resu
             const correctOptionText = q?.options.find(o => o.id === ev.correct_option_id)?.text || "Unknown";
 
             return (
-              <Card key={idx} className={`bg-card rounded-xl overflow-hidden shadow-sm border ${isCorrect ? "border-green-500/50" : "border-primary/50"}`}>
+              <Card key={idx} className={`bg-card rounded-none overflow-hidden shadow-sm border ${isCorrect ? "border-green-500/50" : "border-primary/50"}`}>
                 <CardHeader className={`py-6 border-b ${isCorrect ? 'bg-green-500/10 border-green-500/20' : 'bg-primary/10 border-primary/20'}`}>
                   <div className="flex items-start justify-between gap-4">
                     <CardTitle className="text-xl leading-relaxed font-medium">
@@ -59,16 +59,16 @@ export function QuizResultView({ session, result }: { session: QuizSession; resu
                 </CardHeader>
                 <CardContent className="space-y-6 p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-base">
-                    <div className={`p-4 rounded-lg border ${isCorrect ? 'bg-green-500/10 border-green-500/20' : 'bg-primary/10 border-primary/20'}`}>
+                    <div className={`p-4 rounded-none border ${isCorrect ? 'bg-green-500/10 border-green-500/20' : 'bg-primary/10 border-primary/20'}`}>
                       <span className="font-bold text-xs text-muted-foreground block mb-2">Your Answer</span>
                       <div className="font-medium text-foreground">{userOptionText}</div>
                     </div>
-                    <div className="p-4 rounded-lg bg-muted border border-border">
+                    <div className="p-4 rounded-none bg-muted border border-border">
                       <span className="font-bold text-xs text-muted-foreground block mb-2">Correct Answer</span>
                       <div className="font-medium text-foreground">{correctOptionText}</div>
                     </div>
                   </div>
-                  <div className="mt-6 p-6 bg-muted/50 rounded-lg border border-border">
+                  <div className="mt-6 p-6 bg-muted/50 rounded-none border border-border">
                     <span className="font-bold text-xs text-primary block mb-4">AI Explanation</span>
                     <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:text-muted-foreground">
                       <ReactMarkdown>{ev.explanation}</ReactMarkdown>

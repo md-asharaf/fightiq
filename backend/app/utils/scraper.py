@@ -79,7 +79,7 @@ def _fetch_full_text(topic: str) -> str | None:
 
     from markdownify import markdownify as md
 
-    markdown_content = md(str(content_div), heading_style="ATX", tables=True, strip=["a", "img"])
+    markdown_content = md(str(content_div), heading_style="ATX", tables=True, strip=["a", "img"])  # type: ignore[call-arg]
     return markdown_content.strip()
 
 
@@ -95,7 +95,7 @@ def _fetch_generic_url(url: str) -> dict | None:
 
         from markdownify import markdownify as md
 
-        text = md(str(main_content), heading_style="ATX", tables=True, strip=["a", "img"]).strip()
+        text = md(str(main_content), heading_style="ATX", tables=True, strip=["a", "img"]).strip()  # type: ignore[call-arg]
         title_str = str(soup.title.string) if soup.title and soup.title.string else url
 
         return {
