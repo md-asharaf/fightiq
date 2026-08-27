@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     database_url: str
+    redis_url: str = "redis://localhost:6379"
 
     @property
     def get_db_config(self) -> tuple[str, dict]:

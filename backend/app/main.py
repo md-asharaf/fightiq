@@ -25,16 +25,25 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     """FastAPI lifespan context manager — runs once on startup and shutdown."""
     log.info("FightIQ backend starting up", environment=settings.environment)
 
+    from arq import create_pool
+    from arq.connections import RedisSettings
+
     from app.core.dependencies import set_embedder
     from app.utils.embedder import Embedder
 
     embedder = Embedder()
     set_embedder(embedder)
 
+    # Initialize ARQ Redis Pool
+    redis_pool = await create_pool(RedisSettings.from_dsn(settings.redis_url))
+    _app.state.redis_pool = redis_pool
+
     log.info("FightIQ backend ready to serve requests")
     yield
 
     log.info("FightIQ backend shutting down")
+    if hasattr(_app.state, "redis_pool"):
+        await _app.state.redis_pool.close()
     await engine.dispose()
     log.info("Database connection pool disposed")
 

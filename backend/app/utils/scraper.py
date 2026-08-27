@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import time
+import asyncio
 from urllib.parse import quote as url_quote
 
-import requests
+import httpx
 from bs4 import BeautifulSoup
 
 from app.core.logging import get_logger
@@ -18,7 +18,7 @@ _HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 _REQUEST_DELAY = 1.5
-_REQUEST_TIMEOUT = 15
+_REQUEST_TIMEOUT = 15.0
 
 
 def _url_encode(topic: str) -> str:
@@ -26,14 +26,15 @@ def _url_encode(topic: str) -> str:
     return url_quote(topic.replace(" ", "_"), safe="")
 
 
-def _fetch_summary(topic: str) -> dict | None:
+async def _fetch_summary(topic: str) -> dict | None:
     """Fetch the Wikipedia summary section via REST API."""
     url = _SUMMARY_API.format(_url_encode(topic))
     try:
-        resp = requests.get(url, headers=_HEADERS, timeout=_REQUEST_TIMEOUT)
-        resp.raise_for_status()
-        return resp.json()
-    except requests.HTTPError as exc:
+        async with httpx.AsyncClient(timeout=_REQUEST_TIMEOUT) as client:
+            resp = await client.get(url, headers=_HEADERS)
+            resp.raise_for_status()
+            return resp.json()
+    except httpx.HTTPStatusError as exc:
         log.warning(
             "Wikipedia summary HTTP error",
             topic=topic,
@@ -45,13 +46,14 @@ def _fetch_summary(topic: str) -> dict | None:
         return None
 
 
-def _fetch_full_text(topic: str) -> str | None:
+async def _fetch_full_text(topic: str) -> str | None:
     """Fetch and extract plain-text paragraphs from a Wikipedia article page."""
     url = _WIKI_BASE.format(_url_encode(topic))
     try:
-        resp = requests.get(url, headers=_HEADERS, timeout=_REQUEST_TIMEOUT)
-        resp.raise_for_status()
-    except requests.HTTPError as exc:
+        async with httpx.AsyncClient(timeout=_REQUEST_TIMEOUT) as client:
+            resp = await client.get(url, headers=_HEADERS)
+            resp.raise_for_status()
+    except httpx.HTTPStatusError as exc:
         log.warning(
             "Wikipedia page HTTP error",
             topic=topic,
@@ -83,11 +85,13 @@ def _fetch_full_text(topic: str) -> str | None:
     return markdown_content.strip()
 
 
-def _fetch_generic_url(url: str) -> dict | None:
+async def _fetch_generic_url(url: str) -> dict | None:
     """Fetch and extract text from generic URLs (ufc.com, ufcstats.com, etc)."""
     try:
-        resp = requests.get(url, headers=_HEADERS, timeout=_REQUEST_TIMEOUT)
-        resp.raise_for_status()
+        async with httpx.AsyncClient(timeout=_REQUEST_TIMEOUT) as client:
+            resp = await client.get(url, headers=_HEADERS)
+            resp.raise_for_status()
+
         soup = BeautifulSoup(resp.text, "html.parser")
 
         # Try to find the main content, otherwise use body
@@ -108,18 +112,18 @@ def _fetch_generic_url(url: str) -> dict | None:
         return None
 
 
-def scrape_topic(topic: str) -> dict | None:
+async def scrape_topic(topic: str) -> dict | None:
     """Scrape a Wikipedia topic or a URL and return its title, content, and URL."""
     if topic.startswith("http://") or topic.startswith("https://"):
         log.info("Scraping generic URL", url=topic)
-        return _fetch_generic_url(topic)
+        return await _fetch_generic_url(topic)
 
     log.info("Scraping Wikipedia topic", topic=topic)
-    summary_data = _fetch_summary(topic)
-    time.sleep(_REQUEST_DELAY)
+    summary_data = await _fetch_summary(topic)
+    await asyncio.sleep(_REQUEST_DELAY)
 
-    full_text = _fetch_full_text(topic)
-    time.sleep(_REQUEST_DELAY)
+    full_text = await _fetch_full_text(topic)
+    await asyncio.sleep(_REQUEST_DELAY)
 
     if not summary_data and not full_text:
         log.warning("No content retrieved for topic", topic=topic)
@@ -153,12 +157,12 @@ def scrape_topic(topic: str) -> dict | None:
     }
 
 
-def scrape_topics_generator(topics: list[str]):
-    """Generator that yields progress for scraping multiple topics."""
+async def scrape_topics_generator(topics: list[str]):
+    """Async Generator that yields progress for scraping multiple topics."""
     total = len(topics)
     for idx, topic in enumerate(topics):
         yield {"status": "scraping", "topic": topic, "progress": int((idx / total) * 50)}
-        data = scrape_topic(topic)
+        data = await scrape_topic(topic)
         if data:
             yield {"status": "success", "topic": topic, "data": data}
         else:

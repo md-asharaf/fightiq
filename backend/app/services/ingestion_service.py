@@ -193,7 +193,7 @@ class IngestionService:
         total_chunks = 0
         success_count = 0
 
-        for step in scrape_topics_generator(topics):
+        async for step in scrape_topics_generator(topics):
             if step["status"] == "scraping":
                 yield f"data: {json.dumps(step)}\n\n"
             elif step["status"] == "success":

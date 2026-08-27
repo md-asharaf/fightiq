@@ -28,7 +28,11 @@ class DatabaseToolService:
             output = [", ".join(columns)]
             for row in rows:
                 output.append(", ".join(str(val) for val in row))
+
             return "\n".join(output)
         except Exception as e:
             log.error(f"Failed to execute agent SQL query: {e}")
+            await self.db.rollback()
             return f"SQL Error: {str(e)}"
+        finally:
+            await self.db.commit()

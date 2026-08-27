@@ -4,7 +4,6 @@ from typing import cast
 
 from langchain_core.language_models import BaseChatModel
 from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.knowledge_graph_repository import KnowledgeGraphRepository
 
@@ -68,61 +67,61 @@ class KnowledgeExtractor:
 
     def __init__(
         self,
-        repo: KnowledgeGraphRepository,
         llm: BaseChatModel,
-        db: AsyncSession,
     ):
-        self.repo = repo
         self.llm = llm
-        self.db = db
 
     async def extract_and_ingest(self, query: str, raw_web_content: str) -> None:
         """Runs the extraction in the background and upserts into PostgreSQL."""
-        try:
-            log.info(f"Starting background extraction for query: {query}")
+        from app.db.session import AsyncSessionLocal
 
-            # 1. Structure the LLM
-            structured_llm = self.llm.with_structured_output(KnowledgeExtractionResult)
+        async with AsyncSessionLocal() as session:
+            repo = KnowledgeGraphRepository(session)
+            try:
+                log.info(f"Starting background extraction for query: {query}")
 
-            prompt = (
-                f"Extract structured facts about UFC/MMA fighters and events from the following text.\n"
-                f"Query that generated this text: {query}\n\n"
-                f"TEXT:\n{raw_web_content}\n\n"
-                "CRITICAL INSTRUCTIONS:\n"
-                "1. ONLY extract the PRIMARY subjects (fighters/events) that the text is actually about.\n"
-                "2. DO NOT extract every single opponent listed in fight history tables or passing mentions.\n"
-                "3. If there are no concrete, objective facts about the main subjects, return empty lists.\n"
-                "4. Do not extract opinions or unverified rumors."
-            )
+                # 1. Structure the LLM
+                structured_llm = self.llm.with_structured_output(KnowledgeExtractionResult)
 
-            result = cast(KnowledgeExtractionResult, await structured_llm.ainvoke(prompt))
-
-            # 2. Upsert Fighters
-            if result.fighters:
-                for fighter in result.fighters:
-                    await self.repo.upsert_fighter(fighter.model_dump())
-
-            # 3. Upsert Events
-            if result.events:
-                for event in result.events:
-                    data = event.model_dump()
-                    if data.get("date"):
-                        try:
-                            data["date"] = datetime.datetime.strptime(
-                                data["date"], "%Y-%m-%d"
-                            ).replace(tzinfo=datetime.UTC)
-                        except ValueError:
-                            data["date"] = None
-                    await self.repo.upsert_event(data)
-
-            if result.fighters or result.events:
-                await self.db.commit()
-                log.info(
-                    f"Successfully upserted {len(result.fighters)} fighters and {len(result.events)} events."
+                prompt = (
+                    f"Extract structured facts about UFC/MMA fighters and events from the following text.\n"
+                    f"Query that generated this text: {query}\n\n"
+                    f"TEXT:\n{raw_web_content}\n\n"
+                    "CRITICAL INSTRUCTIONS:\n"
+                    "1. ONLY extract the PRIMARY subjects (fighters/events) that the text is actually about.\n"
+                    "2. DO NOT extract every single opponent listed in fight history tables or passing mentions.\n"
+                    "3. If there are no concrete, objective facts about the main subjects, return empty lists.\n"
+                    "4. Do not extract opinions or unverified rumors."
                 )
-            else:
-                log.info("No facts extracted.")
 
-        except Exception as e:
-            log.error(f"Error in background knowledge extraction: {e}")
-            await self.db.rollback()
+                result = cast(KnowledgeExtractionResult, await structured_llm.ainvoke(prompt))
+
+                # 2. Upsert Fighters
+                if result.fighters:
+                    for fighter in result.fighters:
+                        await repo.upsert_fighter(fighter.model_dump())
+
+                # 3. Upsert Events
+                if result.events:
+                    for event in result.events:
+                        data = event.model_dump()
+                        if data.get("date"):
+                            try:
+                                data["date"] = datetime.datetime.strptime(
+                                    data["date"], "%Y-%m-%d"
+                                ).replace(tzinfo=datetime.UTC)
+                            except ValueError:
+                                data["date"] = None
+                        await repo.upsert_event(data)
+
+                if result.fighters or result.events:
+                    await session.commit()
+                    log.info(
+                        f"Successfully upserted {len(result.fighters)} fighters and {len(result.events)} events."
+                    )
+                else:
+                    log.info("No facts extracted.")
+
+            except Exception as e:
+                log.error(f"Error in background knowledge extraction: {e}")
+                await session.rollback()

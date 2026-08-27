@@ -1,5 +1,5 @@
-import asyncio
 
+from arq.connections import ArqRedis
 from langchain_core.language_models import BaseChatModel
 from langchain_exa import ExaSearchRetriever
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +23,7 @@ class ExaSearchProvider:
         embedder: Embedder,
         llm: BaseChatModel,
         db: AsyncSession,
+        redis_pool: ArqRedis,
     ):
         self.api_key = api_key
         self.cache_repo = cache_repo
@@ -30,6 +31,7 @@ class ExaSearchProvider:
         self.embedder = embedder
         self.llm = llm
         self.db = db
+        self.redis_pool = redis_pool
 
     async def search(
         self, query: str, search_type: str, num_results: int = 3, use_cache: bool = True
@@ -51,22 +53,24 @@ class ExaSearchProvider:
                 )
                 if cached_payload:
                     log.info(f"Semantic Cache HIT for query: {query}")
+                    await self.db.commit()
                     return cached_payload
                 log.info(f"Semantic Cache MISS for query: {query}")
             except Exception as e:
                 log.warning(f"Failed to check semantic cache: {e}")
                 query_embedding = None
 
-        # 2. Perform actual search
+        # Important: release the DB connection before blocking on Exa API regardless of cache usage
+        await self.db.commit()
+
         retriever = ExaSearchRetriever(
             exa_api_key=self.api_key,
-            type=search_type,  # 'neural' or 'keyword'
+            type=search_type,
             use_autoprompt=True,
             num_results=num_results,
             text_contents_options={"highlights": True},
         )
 
-        # ExaSearchRetriever supports ainvoke
         docs = await retriever.ainvoke(query)
 
         payload = "\n\n".join(
@@ -74,7 +78,6 @@ class ExaSearchProvider:
             for d in docs
         )
 
-        # 3. Store in cache
         if use_cache:
             if query_embedding is None:
                 query_embedding = await self.embedder.aembed_query(query)
@@ -85,15 +88,15 @@ class ExaSearchProvider:
                     tool_name=search_type,
                     payload=payload,
                 )
-                await self.db.commit()
             except Exception as e:
                 log.warning(f"Failed to save to semantic cache: {e}")
                 await self.db.rollback()
+            finally:
+                await self.db.commit()
 
-        # 4. Trigger background extraction
-        from app.services.knowledge_extractor import KnowledgeExtractor
-
-        extractor = KnowledgeExtractor(repo=self.kg_repo, llm=self.llm, db=self.db)
-        asyncio.create_task(extractor.extract_and_ingest(query, payload))
+        try:
+            await self.redis_pool.enqueue_job("extract_and_ingest_task", query, payload)
+        except Exception as e:
+            log.warning(f"Failed to enqueue extraction task: {e}")
 
         return payload

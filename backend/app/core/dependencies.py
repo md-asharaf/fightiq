@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import logging
 from collections.abc import AsyncGenerator
+from datetime import UTC
 
+from arq.connections import ArqRedis
 from fastapi import Depends, HTTPException, Request, status
 from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool, StructuredTool
@@ -54,6 +56,10 @@ def get_embedder() -> Embedder:
     return _embedder
 
 
+def get_arq_redis(request: Request) -> ArqRedis:
+    return request.app.state.redis_pool
+
+
 async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)) -> User | None:
     token = request.cookies.get("better-auth.session_token") or request.cookies.get(
         "__Secure-better-auth.session_token"
@@ -66,37 +72,28 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
     if not token:
         return None
 
-    # Verify session using Better-Auth API
-    import httpx
+    from datetime import datetime
 
-    auth_url = f"{settings.frontend_url.rstrip('/')}/api/auth/get-session"
+    from app.db.auth_models import Session
 
-    from urllib.parse import urlparse
-
-    parsed_url = urlparse(settings.frontend_url)
-
-    headers = {
-        "cookie": request.headers.get("cookie", ""),
-        "origin": settings.frontend_url,
-        "host": parsed_url.netloc,
-    }
-    if auth_header := request.headers.get("Authorization"):
-        headers["Authorization"] = auth_header
+    stmt = (
+        select(User)
+        .join(Session, User.id == Session.userId)
+        .where(
+            Session.token == token,
+            Session.expiresAt > datetime.now(UTC).replace(tzinfo=None)
+        )
+    )
 
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(auth_url, headers=headers)
-            if resp.status_code == 200:
-                data = resp.json()
-                if "user" in data and "id" in data["user"]:
-                    user_id = data["user"]["id"]
-                    stmt = select(User).where(User.id == user_id)
-                    result = await db.execute(stmt)
-                    return result.scalar_one_or_none()
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+        if user:
+            return user
     except Exception as e:
-        log.error(f"Error validating session with Better-Auth: {e}")
+        log.error(f"Error validating session from DB: {e}")
 
-    log.warning("Auth failed: Token rejected by Better-Auth")
+    log.warning("Auth failed: Token invalid or expired")
     return None
 
 
@@ -200,6 +197,7 @@ def get_search_provider(
     session: AsyncSession = Depends(get_db),
     embedder: Embedder = Depends(get_embedder),
     llm: BaseChatModel = Depends(get_fast_llm),
+    redis_pool: ArqRedis = Depends(get_arq_redis),
 ) -> IWebSearchProvider:
     from app.repositories.knowledge_graph_repository import KnowledgeGraphRepository
     from app.repositories.tool_cache_repository import ToolCacheRepository
@@ -215,6 +213,7 @@ def get_search_provider(
         embedder=embedder,
         llm=llm,
         db=session,
+        redis_pool=redis_pool,
     )
 
 
