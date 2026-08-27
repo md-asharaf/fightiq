@@ -1,0 +1,42 @@
+[
+  {
+    "question": "What is Islam Makhachev's professional MMA record, and what is his fighting stance?",
+    "ground_truth": "Islam Makhachev has a professional MMA record of 25 wins, 1 loss, and 0 draws. His fighting stance is Southpaw."
+  },
+  {
+    "question": "Who has a higher Significant Strikes Landed per Minute (SLpM), Max Holloway or Alexander Volkanovski?",
+    "ground_truth": "Max Holloway has a higher Significant Strikes Landed per Minute (SLpM) than Alexander Volkanovski. Max Holloway's SLpM is 7.17, while Alexander Volkanovski's is 6.19."
+  },
+  {
+    "question": "Who was the first ever UFC Heavyweight Champion?",
+    "ground_truth": "Mark Coleman was the first ever UFC Heavyweight Champion, winning the inaugural title at UFC 12."
+  },
+  {
+    "question": "Who won the main event at UFC 300?",
+    "ground_truth": "Alex Pereira won the main event at UFC 300 by defeating Jamahal Hill via knockout in the first round."
+  },
+  {
+    "question": "According to the Unified Rules of MMA, what constitutes a grounded fighter, and what attacks are illegal against them?",
+    "ground_truth": "A grounded fighter is one who has any part of their body other than the soles of their feet touching the floor. It is illegal to kick or knee the head of a grounded fighter."
+  },
+  {
+    "question": "How many times did Dustin Poirier and Conor McGregor fight in MMA, and what were the outcomes?",
+    "ground_truth": "Dustin Poirier and Conor McGregor fought three times. Conor McGregor won the first fight by TKO at UFC 178. Dustin Poirier won the second fight by TKO at UFC 257, and won the third fight by TKO (doctor stoppage due to injury) at UFC 264."
+  },
+  {
+    "question": "Can you describe Jon Jones' fighting style and list his physical advantages like height and reach?",
+    "ground_truth": "Jon Jones is known for his highly versatile and unpredictable fighting style, utilizing unorthodox strikes like oblique kicks and spinning elbows, combined with elite wrestling. He possesses significant physical advantages, standing at 6'4\" (193 cm) with an exceptional reach of 84.5 inches (215 cm), which is one of the longest in UFC history."
+  },
+  {
+    "question": "Which UFC fighter holds the record for the most submission wins in the history of the promotion?",
+    "ground_truth": "Charles Oliveira holds the record for the most submission wins in UFC history."
+  },
+  {
+    "question": "If I take Khabib Nurmagomedov's total wins and subtract his total losses, what is the resulting number?",
+    "ground_truth": "Khabib Nurmagomedov has 29 wins and 0 losses. Subtracting his losses from his wins results in 29."
+  },
+  {
+    "question": "Who is Israel Adesanya's head coach, and which gym does he fight out of?",
+    "ground_truth": "Israel Adesanya's head coach is Eugene Bareman, and he fights out of City Kickboxing in Auckland, New Zealand."
+  }
+]
