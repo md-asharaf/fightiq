@@ -193,6 +193,8 @@ class ChatSession(Base):
         server_default=func.now(),
         nullable=False,
     )
+    is_public: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    share_id: Mapped[str | None] = mapped_column(String(50), unique=True, index=True, nullable=True)
 
     messages: Mapped[list[ChatMessage]] = relationship(
         "ChatMessage",

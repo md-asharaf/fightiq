@@ -21,6 +21,11 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   return response.json();
 }
 
+export const api = {
+  get: (endpoint: string, options?: RequestInit) => fetchApi(endpoint, { ...options, method: 'GET' }),
+  post: (endpoint: string, body?: unknown, options?: RequestInit) => fetchApi(endpoint, { ...options, method: 'POST', body: body ? JSON.stringify(body) : undefined }),
+};
+
 export async function uploadFile(endpoint: string, file: File, metadata: Record<string, string> = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   const formData = new FormData();

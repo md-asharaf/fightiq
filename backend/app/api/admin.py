@@ -7,7 +7,7 @@ from app.core.logging import get_logger
 from app.db.auth_models import User
 
 log = get_logger(__name__)
-router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(require_admin)])
+router = APIRouter()
 
 AdminUserDep = Annotated[User, Depends(require_admin)]
 

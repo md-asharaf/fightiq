@@ -7,7 +7,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import React from "react";
 import Image from "next/image";
-import { ExternalLink, FileText, Check, Copy } from "lucide-react";
+import { ExternalLink, FileText, Check, Copy, Volume2, VolumeX } from "lucide-react";
 import { ChatSource } from "@/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useSession } from "@/lib/auth-client";
@@ -43,8 +43,7 @@ const CodeBlock = ({ language, value }: { language: string, value: string }) => 
       </div>
       <div className="text-sm">
         <SyntaxHighlighter
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          style={vscDarkPlus as any}
+          style={vscDarkPlus as Record<string, React.CSSProperties>}
           language={language}
           PreTag="div"
           customStyle={{ margin: 0, padding: '1rem', background: '#1e1e1e' }}
@@ -61,6 +60,43 @@ export const ChatMessage = React.memo(function ChatMessage({ role, content, sour
   const isUser = role === "user";
   const userName = session?.user?.name || "User";
   const initials = userName.substring(0, 2).toUpperCase();
+
+  const [isPlaying, setIsPlaying] = React.useState(false);
+  const synthRef = React.useRef<SpeechSynthesis | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      synthRef.current = window.speechSynthesis;
+    }
+    return () => {
+      if (synthRef.current) {
+        synthRef.current.cancel();
+      }
+    };
+  }, []);
+
+  const toggleSpeech = () => {
+    if (!synthRef.current) return;
+    
+    if (isPlaying) {
+      synthRef.current.cancel();
+      setIsPlaying(false);
+    } else {
+      // Strip markdown before reading aloud
+      const cleanText = content.replace(/```[\s\S]*?```/g, "Code block omitted.") // Remove code blocks
+                              .replace(/[#*`>]/g, '') // Remove markdown symbols
+                              .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1'); // Replace links with just text
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.rate = 1.0;
+      utterance.onend = () => setIsPlaying(false);
+      utterance.onerror = () => setIsPlaying(false);
+      
+      // Stop any current speech before starting new one
+      synthRef.current.cancel();
+      synthRef.current.speak(utterance);
+      setIsPlaying(true);
+    }
+  };
 
   return (
     <motion.div
@@ -87,7 +123,16 @@ export const ChatMessage = React.memo(function ChatMessage({ role, content, sour
         </div>
 
         {/* Message Content */}
-        <div className="flex-1 min-w-0 pt-0 md:pt-1">
+        <div className="flex-1 min-w-0 pt-0 md:pt-1 relative group">
+          {!isUser && (
+            <button
+              onClick={toggleSpeech}
+              className={`absolute -left-12 top-0 p-1.5 rounded-full transition-opacity ${isPlaying ? 'opacity-100 bg-primary/10 text-primary' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+              title={isPlaying ? "Stop reading" : "Read aloud"}
+            >
+              {isPlaying ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </button>
+          )}
           <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:text-foreground prose-headings:text-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground prose-strong:font-bold">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}

@@ -87,3 +87,35 @@ async def clear_chat_history(
     user_id = current_user.id if current_user else None
     await chat_service.delete_history(str(session_id), user_id=user_id)
     return None
+
+
+@router.post("/history/{session_id}/share")
+async def share_chat_session(
+    session_id: uuid.UUID,
+    chat_service: ChatServiceDep,
+    current_user: CurrentUserDep,
+):
+    """Make a chat session public and return the shareable link ID."""
+    import secrets
+
+    from fastapi import HTTPException
+
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Must be logged in to share a chat.")
+
+    # Get the session to verify ownership
+    session = await chat_service.repo.get_session(session_id)
+    if not session or (session.user_id and session.user_id != current_user.id):
+        raise HTTPException(status_code=404, detail="Session not found or not owned by user.")
+
+    if not getattr(session, "is_public", False):
+        share_id = secrets.token_urlsafe(8)
+        setattr(session, "is_public", True)
+        setattr(session, "share_id", share_id)
+
+        chat_service.db.add(session)
+        await chat_service.db.commit()
+    else:
+        share_id = getattr(session, "share_id")
+
+    return {"share_id": share_id, "url": f"/share/c/{share_id}"}

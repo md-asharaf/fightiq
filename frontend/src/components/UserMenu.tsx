@@ -1,11 +1,10 @@
 "use client";
 
-import { useSession, authClient } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
+import { useAuthActions } from "@/hooks/auth/useAuthActions";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useRouter } from "next/navigation";
 
 import {
   SidebarMenu,
@@ -25,8 +23,7 @@ import { ChevronsUpDown } from "lucide-react";
 
 export function UserMenu({ isSidebar = false }: { isSidebar?: boolean }) {
   const { data: session, isPending } = useSession();
-  const router = useRouter();
-  const [isSigningOut, setIsSigningOut] = useState(false);
+  const { isSigningOut, handleSignOut } = useAuthActions();
 
   if (isPending || isSigningOut) {
     return <div className="h-8 w-8 animate-pulse bg-muted rounded-full mx-auto" />;
@@ -48,25 +45,7 @@ export function UserMenu({ isSidebar = false }: { isSidebar?: boolean }) {
     );
   }
 
-  const handleSignOut = async () => {
-    setIsSigningOut(true);
-    toast.loading("Signing out...", { id: "signout-toast" });
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          toast.dismiss("signout-toast");
-          toast.success("Signed out successfully");
-          router.push("/");
-          router.refresh();
-        },
-        onError: () => {
-          toast.dismiss("signout-toast");
-          toast.error("Failed to sign out");
-          setIsSigningOut(false);
-        }
-      },
-    });
-  };
+
 
   const userInitials = session.user.name
     ? session.user.name.substring(0, 2).toUpperCase()

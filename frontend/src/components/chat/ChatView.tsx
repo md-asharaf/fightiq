@@ -6,6 +6,8 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useChat } from "@/hooks/useChat";
 import { ChatInput } from "@/components/chat/ChatInput";
+import { Share2 } from "lucide-react";
+import { useShareChatAction } from "@/hooks/chat/useShareChatAction";
 
 export function ChatView() {
   const {
@@ -14,7 +16,14 @@ export function ChatView() {
     sessionLoading,
     handleSend,
     handleStop,
+    sessionId
   } = useChat();
+
+  const { mutate: shareChat, isPending: isSharing } = useShareChatAction();
+
+  const handleShare = () => {
+    if (sessionId) shareChat(sessionId);
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -24,6 +33,22 @@ export function ChatView() {
 
   return (
     <div className="flex-1 flex flex-col relative h-full w-full bg-background">
+      {/* Optional Top Header for Share */}
+      {messages.length > 0 && !sessionLoading && (
+        <div className="absolute top-0 right-0 z-10 p-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleShare}
+            disabled={isSharing}
+            className="flex items-center gap-2 bg-card/80 backdrop-blur-sm border-border hover:bg-muted"
+          >
+            <Share2 className="h-4 w-4" />
+            <span className="hidden sm:inline">{isSharing ? "Sharing..." : "Share Chat"}</span>
+          </Button>
+        </div>
+      )}
+
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto pb-32">
         <div className="flex flex-col w-full max-w-3xl mx-auto pt-8">

@@ -66,7 +66,7 @@ def chat_service():
 
     agent_factory = AgentFactory(db=db, embedder=embedder, llm=llm, search_tools=[])
 
-    return ChatService(chat_repository=repo, agent_factory=agent_factory)
+    return ChatService(chat_repository=repo, agent_factory=agent_factory, db=db)
 
 
 @pytest.mark.asyncio

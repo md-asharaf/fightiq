@@ -370,3 +370,9 @@ def get_quiz_service(
     )
 
 
+def get_fighter_service(db: AsyncSession = Depends(get_db)):
+    from app.services.fighter_service import FighterService
+
+    return FighterService(db=db)
+
+

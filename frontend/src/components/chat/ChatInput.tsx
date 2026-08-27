@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, StopCircle } from "lucide-react";
+import { Send, StopCircle, Mic, MicOff } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { useSpeechRecognition } from "@/hooks/chat/useSpeechRecognition";
 
 interface ChatInputProps {
   isLoading: boolean;
@@ -15,11 +16,24 @@ export function ChatInput({ isLoading, onSend, onStop }: ChatInputProps) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const { isListening, speechSupported, startListening, stopListening } = useSpeechRecognition((text) => {
+    setInput(text);
+  });
+
   useEffect(() => {
     if (input === "" && textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
   }, [input]);
+
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      setInput("");
+      startListening();
+    }
+  };
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -64,7 +78,20 @@ export function ChatInput({ isLoading, onSend, onStop }: ChatInputProps) {
             rows={1}
             className="flex-1 bg-transparent border-0 focus-visible:ring-0 shadow-none px-4 py-4 text-base resize-none text-foreground placeholder:text-muted-foreground min-h-[56px] max-h-[200px]"
           />
-          <div className="p-2">
+          <div className="p-2 flex items-center gap-2">
+            {!isLoading && speechSupported && (
+              <Button
+                type="button"
+                onClick={toggleListening}
+                size="icon"
+                variant="ghost"
+                className={`h-10 w-10 rounded-xl transition-all ${isListening ? 'bg-destructive/20 text-destructive hover:bg-destructive/30 animate-pulse' : 'text-muted-foreground hover:bg-accent'}`}
+                title={isListening ? "Stop listening" : "Start speaking"}
+              >
+                {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                <span className="sr-only">Toggle Voice</span>
+              </Button>
+            )}
             {isLoading ? (
               <Button
                 type="button"

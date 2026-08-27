@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { MessageSquare, PlusCircle, LogIn, Trash2, HelpCircle, BarChart2, ShieldCheck } from "lucide-react";
+import { MessageSquare, PlusCircle, LogIn, Trash2, HelpCircle, BarChart2, Swords, Upload } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
@@ -95,6 +95,14 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={pathname?.startsWith("/compare")}>
+                  <Link href="/compare" className="flex items-center space-x-3">
+                    <Swords className="h-4 w-4" />
+                    <span>Compare</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               {session?.user?.role === "admin" && (
                 <>
                   <SidebarMenuItem>
@@ -108,8 +116,8 @@ export function AppSidebar() {
                   <SidebarMenuItem>
                     <SidebarMenuButton isActive={pathname?.startsWith("/admin")}>
                       <Link href="/admin" className="flex items-center space-x-3">
-                        <ShieldCheck className="h-4 w-4" />
-                        <span>Admin Dashboard</span>
+                        <Upload className="h-4 w-4" />
+                        <span>Upload & Scrape</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

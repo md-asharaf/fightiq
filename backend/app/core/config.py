@@ -20,7 +20,6 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "FightIQ"
-    frontend_url: str
     environment: str
     log_level: str
 

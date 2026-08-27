@@ -1,22 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signIn, useSession } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuthActions } from "@/hooks/auth/useAuthActions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
 
 export function LoginView({ defaultIsLogin = true }: { defaultIsLogin?: boolean }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const isLogin = defaultIsLogin;
-  const [loading, setLoading] = useState(false);
   const { data: session, isPending } = useSession();
+  const { loading, handleSignIn, handleSignUp, handleGoogleSignIn } = useAuthActions();
 
   useEffect(() => {
     if (session) {
@@ -26,46 +26,10 @@ export function LoginView({ defaultIsLogin = true }: { defaultIsLogin?: boolean 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
     if (isLogin) {
-      const { error } = await signIn.email({
-        email,
-        password,
-      });
-      setLoading(false);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success("Logged in successfully");
-        router.push("/");
-      }
+      await handleSignIn(email, password);
     } else {
-      const { signUp } = await import("@/lib/auth-client");
-      const { error } = await signUp.email({
-        email,
-        password,
-        name: email.split("@")[0],
-      });
-      setLoading(false);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success("Account created successfully");
-        router.push("/");
-      }
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    const { error } = await signIn.social({
-      provider: "google",
-      callbackURL: "/",
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message || "Google Sign-In failed or not configured.");
+      await handleSignUp(email, password);
     }
   };
 

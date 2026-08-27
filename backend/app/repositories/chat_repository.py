@@ -21,6 +21,16 @@ class ChatRepository(BaseRepository[ChatSession]):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_session_by_share_id(self, share_id: str) -> ChatSession | None:
+        stmt = (
+            select(ChatSession)
+            .options(selectinload(ChatSession.messages))
+            .where(ChatSession.share_id == share_id)
+            .where(ChatSession.is_public.is_(True))
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def create_session(
         self, session_id: uuid.UUID, user_id: str | None = None
     ) -> ChatSession:

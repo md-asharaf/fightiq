@@ -181,6 +181,17 @@ class ChatService:
         ]
         return ChatHistory(session_id=session_id_str, messages=messages)
 
+    async def get_shared_history(self, share_id: str) -> ChatHistory:
+        chat_session = await self.repo.get_session_by_share_id(share_id)
+        if not chat_session:
+            raise ResourceNotFoundError("Shared chat not found or is not public.")
+
+        sorted_messages = sorted(chat_session.messages, key=lambda x: x.created_at)
+        messages = [
+            ChatMessage(role=m.role, content=m.content, sources=m.sources) for m in sorted_messages
+        ]
+        return ChatHistory(session_id=str(chat_session.id), messages=messages)
+
     async def list_sessions(self, user_id: str | None = None) -> list[Any]:
         from app.schemas.chat import ChatSessionPreview
 
