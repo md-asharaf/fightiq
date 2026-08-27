@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field
 
@@ -30,4 +30,4 @@ class EvalRunResult(BaseModel):
         description="Average score for each metric across all questions"
     )
     question_results: list[EvalQuestionResult]
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC).replace(tzinfo=None))

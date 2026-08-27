@@ -67,6 +67,9 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
     if not token:
         return None
 
+    import urllib.parse
+    token = urllib.parse.unquote(token)
+
     from datetime import datetime
 
     from app.db.auth_models import Session

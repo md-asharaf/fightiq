@@ -11,7 +11,7 @@ if "langchain_community.chat_models.vertexai" not in sys.modules:
 from datasets import Dataset
 from langchain_core.language_models import BaseChatModel
 from ragas import evaluate
-from ragas.metrics import (
+from ragas.metrics.collections import (
     answer_relevancy,
     context_precision,
     context_recall,
