@@ -1,29 +1,58 @@
+"""
+ARQ Worker
+==========
+Background job worker for FightIQ.
+
+Tasks:
+- extract_and_ingest_task: (DISABLED - kept for backwards compat) LLM knowledge extraction
+- refresh_fighters_task:   Weekly ETL to refresh fighter stats from UFCStats GitHub CSVs
+
+Run the worker:
+    uv run arq app.worker.WorkerSettings
+"""
+
 import logging
 
 from arq.connections import RedisSettings
+from arq.cron import cron
 
 from app.core.config import settings
 
 log = logging.getLogger("worker")
 
-async def extract_and_ingest_task(ctx, query: str, raw_web_content: str) -> None:
-    """Worker task to execute the knowledge extraction in the background."""
-    from app.core.dependencies import get_fast_llm
-    from app.services.knowledge_extractor import KnowledgeExtractor
 
-    log.info(f"Worker received extraction task for query: {query}")
+# ── Weekly ETL ───────────────────────────────────────────────────────────────
 
-    # Initialize LLM inside the worker context
-    llm = get_fast_llm()
-    extractor = KnowledgeExtractor(llm=llm)
-
+async def refresh_fighters_task(ctx) -> None:
+    """
+    Weekly task: Pull latest UFC fighter data from GitHub CSVs and upsert into DB.
+    Runs every Monday at 03:00 UTC to catch weekend fight results.
+    """
+    log.info("Starting weekly fighter data refresh...")
     try:
-        await extractor.extract_and_ingest(query, raw_web_content)
-        log.info(f"Worker completed extraction task for query: {query}")
+        from app.scripts.seed_ufcstats import run_etl
+        await run_etl(force=True)
+        log.info("Weekly fighter data refresh completed successfully.")
     except Exception as e:
-        log.error(f"Worker failed to execute extraction task: {e}")
+        log.error(f"Weekly fighter data refresh failed: {e}")
         raise
 
+
+async def seed_rankings_task(ctx) -> None:
+    """
+    Weekly task: Fetch latest UFC rankings from Parse.bot and upsert into DB.
+    Runs every Wednesday at 04:00 UTC (captures Tuesday rankings updates).
+    """
+    log.info("Starting weekly rankings refresh...")
+    try:
+        from app.scripts.seed_rankings import run_rankings_etl
+        await run_rankings_etl()
+        log.info("Weekly rankings refresh completed successfully.")
+    except Exception as e:
+        log.error(f"Weekly rankings refresh failed: {e}")
+        raise
+
+# ── Lifecycle ────────────────────────────────────────────────────────────────
 
 async def startup(ctx):
     """Run on worker startup."""
@@ -40,7 +69,13 @@ async def shutdown(ctx):
 class WorkerSettings:
     """Settings for the ARQ worker process."""
 
-    functions = [extract_and_ingest_task]
+    functions = [refresh_fighters_task, seed_rankings_task]
+
+    cron_jobs = [
+        cron(refresh_fighters_task, weekday=0, hour=3, minute=0),
+        cron(seed_rankings_task, weekday=2, hour=4, minute=0),
+    ]
+
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
     on_startup = startup
     on_shutdown = shutdown

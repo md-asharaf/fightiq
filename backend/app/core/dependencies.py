@@ -4,7 +4,6 @@ import logging
 from collections.abc import AsyncGenerator
 from datetime import UTC
 
-from arq.connections import ArqRedis
 from fastapi import Depends, HTTPException, Request, status
 from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool, StructuredTool
@@ -54,10 +53,6 @@ def get_embedder() -> Embedder:
             "Ensure the FastAPI lifespan context manager has run.",
         )
     return _embedder
-
-
-def get_arq_redis(request: Request) -> ArqRedis:
-    return request.app.state.redis_pool
 
 
 async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)) -> User | None:
@@ -196,24 +191,17 @@ def get_fast_llm() -> BaseChatModel:
 def get_search_provider(
     session: AsyncSession = Depends(get_db),
     embedder: Embedder = Depends(get_embedder),
-    llm: BaseChatModel = Depends(get_fast_llm),
-    redis_pool: ArqRedis = Depends(get_arq_redis),
 ) -> IWebSearchProvider:
-    from app.repositories.knowledge_graph_repository import KnowledgeGraphRepository
     from app.repositories.tool_cache_repository import ToolCacheRepository
     from app.utils.tools import ExaSearchProvider
 
     cache_repo = ToolCacheRepository(session=session)
-    kg_repo = KnowledgeGraphRepository(session=session)
 
     return ExaSearchProvider(
         settings.exa_api_key,
         cache_repo=cache_repo,
-        kg_repo=kg_repo,
         embedder=embedder,
-        llm=llm,
         db=session,
-        redis_pool=redis_pool,
     )
 
 
@@ -281,15 +269,55 @@ def get_chat_repository(session: AsyncSession = Depends(get_db)) -> IChatReposit
     return ChatRepository(session=session)
 
 
+def get_chunk_repository(session: AsyncSession = Depends(get_db)):
+    from app.repositories.chunk_repository import ChunkRepository
+
+    return ChunkRepository(session=session)
+
+
+def get_document_repository(session: AsyncSession = Depends(get_db)) -> IDocumentRepository:
+    from app.repositories.document_repository import DocumentRepository
+
+    return DocumentRepository(session=session)
+
+
+def get_document_service(
+    repo: IDocumentRepository = Depends(get_document_repository),
+    db: AsyncSession = Depends(get_db),
+    embedder: Embedder = Depends(get_embedder),
+):
+    from app.services.document_service import DocumentService
+
+    return DocumentService(document_repository=repo, db=db, embedder=embedder)
+
+
+def get_ingestion_service(
+    doc_repo: IDocumentRepository = Depends(get_document_repository),
+    chunk_repo=Depends(get_chunk_repository),
+    embedder: Embedder = Depends(get_embedder),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.services.ingestion_service import IngestionService
+
+    return IngestionService(doc_repo=doc_repo, chunk_repo=chunk_repo, embedder=embedder, db=db)
+
+
 def get_agent_factory(
     db: AsyncSession = Depends(get_db),
     embedder: Embedder = Depends(get_embedder),
     llm: BaseChatModel = Depends(get_chat_llm),
     search_tools: list[BaseTool] = Depends(get_search_tools),
+    ingestion_service=Depends(get_ingestion_service),
 ):
     from app.services.agent_factory import AgentFactory
 
-    return AgentFactory(db=db, embedder=embedder, llm=llm, search_tools=search_tools)
+    return AgentFactory(
+        db=db,
+        embedder=embedder,
+        llm=llm,
+        search_tools=search_tools,
+        ingestion_service=ingestion_service
+    )
 
 
 def get_chat_service(
@@ -328,12 +356,6 @@ def get_quiz_repository(session: AsyncSession = Depends(get_db)) -> IQuizReposit
     return QuizRepository(session=session)
 
 
-def get_chunk_repository(session: AsyncSession = Depends(get_db)):
-    from app.repositories.chunk_repository import ChunkRepository
-
-    return ChunkRepository(session=session)
-
-
 def get_quiz_service(
     repo: IQuizRepository = Depends(get_quiz_repository),
     chunk_repo=Depends(get_chunk_repository),
@@ -348,38 +370,3 @@ def get_quiz_service(
     )
 
 
-def get_document_repository(session: AsyncSession = Depends(get_db)) -> IDocumentRepository:
-    from app.repositories.document_repository import DocumentRepository
-
-    return DocumentRepository(session=session)
-
-
-def get_document_service(
-    repo: IDocumentRepository = Depends(get_document_repository),
-    db: AsyncSession = Depends(get_db),
-    embedder: Embedder = Depends(get_embedder),
-):
-    from app.services.document_service import DocumentService
-
-    return DocumentService(document_repository=repo, db=db, embedder=embedder)
-
-
-def get_ingestion_service(
-    doc_repo: IDocumentRepository = Depends(get_document_repository),
-    chunk_repo=Depends(get_chunk_repository),
-    embedder: Embedder = Depends(get_embedder),
-    db: AsyncSession = Depends(get_db),
-):
-    from app.services.ingestion_service import IngestionService
-
-    return IngestionService(doc_repo=doc_repo, chunk_repo=chunk_repo, embedder=embedder, db=db)
-
-
-def get_seed_service(
-    doc_repo: IDocumentRepository = Depends(get_document_repository),
-    ingestion_service=Depends(get_ingestion_service),
-    db: AsyncSession = Depends(get_db),
-):
-    from app.services.seed_service import SeedService
-
-    return SeedService(doc_repo=doc_repo, ingestion_service=ingestion_service, db=db)

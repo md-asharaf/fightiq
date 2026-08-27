@@ -1,11 +1,8 @@
 
-from arq.connections import ArqRedis
-from langchain_core.language_models import BaseChatModel
 from langchain_exa import ExaSearchRetriever
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
-from app.repositories.knowledge_graph_repository import KnowledgeGraphRepository
 from app.repositories.tool_cache_repository import ToolCacheRepository
 from app.utils.embedder import Embedder
 
@@ -19,19 +16,13 @@ class ExaSearchProvider:
         self,
         api_key: str,
         cache_repo: ToolCacheRepository,
-        kg_repo: KnowledgeGraphRepository,
         embedder: Embedder,
-        llm: BaseChatModel,
         db: AsyncSession,
-        redis_pool: ArqRedis,
     ):
         self.api_key = api_key
         self.cache_repo = cache_repo
-        self.kg_repo = kg_repo
         self.embedder = embedder
-        self.llm = llm
         self.db = db
-        self.redis_pool = redis_pool
 
     async def search(
         self, query: str, search_type: str, num_results: int = 3, use_cache: bool = True
@@ -60,7 +51,7 @@ class ExaSearchProvider:
                 log.warning(f"Failed to check semantic cache: {e}")
                 query_embedding = None
 
-        # Important: release the DB connection before blocking on Exa API regardless of cache usage
+        # Release the DB connection before blocking on Exa API
         await self.db.commit()
 
         retriever = ExaSearchRetriever(
@@ -93,10 +84,5 @@ class ExaSearchProvider:
                 await self.db.rollback()
             finally:
                 await self.db.commit()
-
-        try:
-            await self.redis_pool.enqueue_job("extract_and_ingest_task", query, payload)
-        except Exception as e:
-            log.warning(f"Failed to enqueue extraction task: {e}")
 
         return payload

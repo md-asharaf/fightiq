@@ -42,6 +42,28 @@ class QuizService:
             for c in chunks_with_scores
         )
 
+        # Inject real fighter stats for better LLM quiz generation
+        if request.category in ["fighters", "stats", "general"]:
+            from sqlalchemy import func, select
+
+            from app.db.models import Fighter
+
+            stmt = select(Fighter).order_by(func.random()).limit(3)
+            if request.fighter:
+                stmt = select(Fighter).where(Fighter.name.ilike(f"%{request.fighter}%")).limit(1)
+
+            fighters = (await self.db.execute(stmt)).scalars().all()
+
+            if fighters:
+                stats_context = "\n\n--- REAL FIGHTER STATS (Use this to create accurate questions) ---\n"
+                for f in fighters:
+                    stats_context += f"Fighter: {f.name}\n"
+                    stats_context += f"Record: {f.wins} Wins, {f.losses} Losses, {f.draws} Draws\n"
+                    stats_context += f"Striking: SLpM: {f.slpm or 0}, Str. Acc: {f.str_acc or 0}%, SApM: {f.sapm or 0}, Str. Def: {f.str_def or 0}%\n"
+                    stats_context += f"Grappling: TD Avg: {f.td_avg or 0}, TD Acc: {f.td_acc or 0}%, TD Def: {f.td_def or 0}%, Sub Avg: {f.sub_avg or 0}\n\n"
+
+                context_str = stats_context + context_str
+
         generated_data = await generate_quiz(
             llm=self.llm,
             topic=request.topic,

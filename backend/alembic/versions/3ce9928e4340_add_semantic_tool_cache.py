@@ -8,7 +8,7 @@ Create Date: 2026-08-23 17:55:37.437307
 
 from collections.abc import Sequence
 
-import pgvector
+from pgvector.sqlalchemy import Vector
 import sqlalchemy as sa
 
 from alembic import op
@@ -27,7 +27,7 @@ def upgrade() -> None:
         "semantic_tool_cache",
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("query", sa.Text(), nullable=False),
-        sa.Column("query_embedding", pgvector.sqlalchemy.vector.VECTOR(dim=768), nullable=False),
+        sa.Column("query_embedding", Vector(dim=768), nullable=False),
         sa.Column("tool_name", sa.String(length=100), nullable=False),
         sa.Column("result_payload", sa.Text(), nullable=False),
         sa.Column(

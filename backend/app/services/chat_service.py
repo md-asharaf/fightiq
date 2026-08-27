@@ -73,16 +73,16 @@ class ChatService:
         )
 
         sources: list[Any] = []
-        search_tools = {"normal_web_search", "realtime_web_search", "deep_web_search"}
-        if "intermediate_steps" in result:
-            for action, observation in result["intermediate_steps"]:
-                if action.tool in search_tools:
-                    if isinstance(observation, list):
-                        sources.extend(extract_citations(observation))
-                    elif isinstance(observation, str):
-                        from app.utils.citation_extractor import extract_citations_from_string
 
-                        sources.extend(extract_citations_from_string(observation))
+        # In LangGraph, citations are stored in the state
+        if "citations" in result and result["citations"]:
+            for citation in result["citations"]:
+                if isinstance(citation, dict) or hasattr(citation, "url"):
+                    sources.append(citation)
+                elif isinstance(citation, str):
+                    from app.utils.citation_extractor import extract_citations_from_string
+
+                    sources.extend(extract_citations_from_string(citation))
 
         await self.repo.add_message(chat_session.id, "assistant", result["output"], sources)
         await self.db.commit()

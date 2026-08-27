@@ -19,7 +19,7 @@ export function AdminDashboardView() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
   
-  const { documents, totalDocuments, isLoading, isFetching, uploading, seeding, loadDocuments, seedData, uploadDoc, deleteDoc } = useAdmin(page, pageSize);
+  const { documents, totalDocuments, isLoading, isFetching, uploading, triggeringUfcStats, triggeringRankings, loadDocuments, triggerUfcStats, triggerRankings, uploadDoc, deleteDoc } = useAdmin(page, pageSize);
   const [file, setFile] = useState<File | null>(null);
   const [category, setCategory] = useState("fighters");
   const [scrapeStatus, setScrapeStatus] = useState("");
@@ -27,14 +27,21 @@ export function AdminDashboardView() {
 
   const totalPages = Math.ceil(totalDocuments / pageSize) || 1;
 
-
-
-  const handleSeed = async () => {
+  const handleTriggerUfcStats = async () => {
     try {
-      await seedData();
-      toast.success("Successfully seeded curated data!");
+      await triggerUfcStats();
+      toast.success("UFCStats ETL task has been queued successfully!");
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to seed data.");
+      toast.error(err instanceof Error ? err.message : "Failed to trigger UFCStats ETL.");
+    }
+  };
+
+  const handleTriggerRankings = async () => {
+    try {
+      await triggerRankings();
+      toast.success("Rankings ETL task has been queued successfully!");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to trigger Rankings ETL.");
     }
   };
 
@@ -97,26 +104,49 @@ export function AdminDashboardView() {
           <p className="text-sm md:text-base text-muted-foreground">Manage UFC documents, trigger seeding, and run web scrapers.</p>
         </div>
 
-        <AlertDialog>
-          <AlertDialogTrigger
-            render={<Button disabled={seeding} className="bg-red-600 hover:bg-red-700 text-white" />}
-          >
-            {seeding ? <RefreshCcw className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
-            {seeding ? "Seeding Data..." : "Seed Curated Data"}
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action will trigger the ingestion pipeline to parse, chunk, and embed all predefined UFC seed files. This might take a minute or two.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleSeed} className="bg-red-600 text-white hover:bg-red-700">Continue</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <div className="flex gap-4">
+          <AlertDialog>
+            <AlertDialogTrigger
+              render={<Button disabled={triggeringUfcStats} variant="outline" className="border-primary text-primary hover:bg-primary/10 rounded-none" />}
+            >
+              {triggeringUfcStats ? <RefreshCcw className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
+              {triggeringUfcStats ? "Queueing..." : "Sync UFCStats"}
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-none border-border">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Trigger UFCStats ETL?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will queue a background task to scrape ufcstats.com and update all historical fighter statistics in the database.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="rounded-none">Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleTriggerUfcStats} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none">Start Sync</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog>
+            <AlertDialogTrigger
+              render={<Button disabled={triggeringRankings} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-none" />}
+            >
+              {triggeringRankings ? <RefreshCcw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+              {triggeringRankings ? "Queueing..." : "Sync Rankings"}
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-none border-border">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Trigger Rankings Sync?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will queue a background task to fetch live UFC rankings from Parse.bot and update the database.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="rounded-none">Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleTriggerRankings} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none">Start Sync</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">

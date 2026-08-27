@@ -13,6 +13,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -280,11 +281,24 @@ class Fighter(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     nickname: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    first_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    last_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    division: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    nationality: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    country: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    date_of_birth: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     weight_class: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    record: Mapped[str | None] = mapped_column(String(100), nullable=True)
     wins: Mapped[int | None] = mapped_column(Integer, nullable=True)
     losses: Mapped[int | None] = mapped_column(Integer, nullable=True)
     draws: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    no_contests: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ko_wins: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    submission_wins: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    decision_wins: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    current_ranking: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_champion: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    active_status: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     title_defenses: Mapped[int | None] = mapped_column(Integer, nullable=True)
     championships: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     win_streak: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -300,6 +314,19 @@ class Fighter(Base):
     td_acc: Mapped[float | None] = mapped_column(Float, nullable=True)
     td_def: Mapped[float | None] = mapped_column(Float, nullable=True)
     sub_avg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    profile_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    source: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    last_verified_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    data_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     last_updated: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
@@ -314,9 +341,120 @@ class Event(Base):
     name: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    venue: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    promotion: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    main_event: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    event_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    source: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    last_verified_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    data_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     last_updated: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
+
+class Fight(Base):
+    """Structured data about a MMA Fight."""
+
+    __tablename__ = "fights"
+    __table_args__ = (UniqueConstraint("event_id", "fighter_a_id", "fighter_b_id", name="uix_fight_event_fighters"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    event_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("events.id", ondelete="CASCADE"), nullable=True, index=True)
+    fighter_a_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("fighters.id", ondelete="SET NULL"), nullable=True, index=True)
+    fighter_b_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("fighters.id", ondelete="SET NULL"), nullable=True, index=True)
+    winner_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("fighters.id", ondelete="SET NULL"), nullable=True)
+    weight_class: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    result: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    method: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    round: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    time: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    referee: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    judge_scorecards: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    bonus: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    title_fight: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    source: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    last_verified_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    data_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    last_updated: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+class Ranking(Base):
+    """Structured data about MMA Rankings."""
+
+    __tablename__ = "rankings"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    promotion: Mapped[str | None] = mapped_column(String(100), nullable=True, default="UFC")
+    division: Mapped[str] = mapped_column(String(100), nullable=False)
+    rank: Mapped[int] = mapped_column(Integer, nullable=False)
+    fighter_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("fighters.id", ondelete="CASCADE"), nullable=True, index=True)
+    ranking_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    source: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    last_verified_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    data_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    last_updated: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+class EventFightCard(Base):
+    """Tracks bout order and card type for fights within an event."""
+
+    __tablename__ = "event_fight_cards"
+    __table_args__ = (UniqueConstraint("event_id", "fight_id", name="uix_event_fight"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    event_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True)
+    fight_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("fights.id", ondelete="CASCADE"), nullable=False, index=True)
+    card_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    bout_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+class WeightClass(Base):
+    """Structured weight class limits and definitions."""
+
+    __tablename__ = "weight_classes"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    promotion: Mapped[str] = mapped_column(String(100), nullable=False)
+    division: Mapped[str] = mapped_column(String(100), nullable=False)
+    minimum_weight: Mapped[float | None] = mapped_column(Float, nullable=True)
+    maximum_weight: Mapped[float | None] = mapped_column(Float, nullable=True)
+    unit: Mapped[str | None] = mapped_column(String(50), default="lbs")
+
+    source: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
 
 from app.db.auth_models import Account, Session, User, Verification  # noqa: E402, F401

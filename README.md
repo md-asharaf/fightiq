@@ -85,3 +85,73 @@ npm run dev
 - **Database**: PostgreSQL 17 + pgvector.
 - **AI Models**: Google `gemini-2.0-flash` (Generation) & `text-embedding-004` (Embeddings).
 - **RAG Eval**: Ragas (Faithfulness, Answer Relevancy).
+
+
+
+# UFC Stats CSV Structures
+
+This document outlines the column headers for all 6 CSV files provided by the `Greco1899/scrape_ufc_stats` GitHub repository. These files are the raw scraped data from UFCStats.com.
+
+## 1. ufc_event_details.csv
+Contains the basic metadata for every UFC event.
+```csv
+EVENT,URL,DATE,LOCATION
+```
+- **EVENT**: Event name (e.g., "UFC 294: Makhachev vs. Volkanovski 2")
+- **URL**: UFCStats event URL
+- **DATE**: Date of the event
+- **LOCATION**: Venue / City
+
+---
+
+## 2. ufc_fighter_details.csv
+Contains basic mapping between fighter names and their URLs.
+```csv
+FIRST,LAST,NICKNAME,URL
+```
+
+---
+
+## 3. ufc_fighter_tott.csv
+Contains the "Tale of the Tape" (physical attributes) for each fighter.
+```csv
+FIGHTER,HEIGHT,WEIGHT,REACH,STANCE,DOB,URL
+```
+- **FIGHTER**: Full name
+- **DOB**: Date of birth
+
+---
+
+## 4. ufc_fight_results.csv
+Contains the high-level results and outcomes of every fight.
+```csv
+EVENT,BOUT,OUTCOME,WEIGHTCLASS,METHOD,ROUND,TIME,TIME FORMAT,REFEREE,DETAILS,URL
+```
+- **BOUT**: The fight matchup (e.g., "Islam Makhachev vs. Alexander Volkanovski")
+- **OUTCOME**: W/L/D/NC
+- **DETAILS**: Often contains bonuses like "Performance of the Night" or point deductions.
+
+---
+
+## 5. ufc_fight_details.csv
+Provides the URL linking to the detailed round-by-round statistics for a specific fight.
+```csv
+EVENT,BOUT,URL
+```
+
+---
+
+## 6. ufc_fight_stats.csv 
+*(The missing piece)* Contains the highly detailed, round-by-round combat statistics for every fighter in every fight.
+```csv
+EVENT,BOUT,ROUND,FIGHTER,KD,SIG.STR.,SIG.STR. %,TOTAL STR.,TD,TD %,SUB.ATT,REV.,CTRL,HEAD,BODY,LEG,DISTANCE,CLINCH,GROUND
+```
+- **ROUND**: Round number
+- **KD**: Knockdowns
+- **SIG.STR.**: Significant strikes (Landed of Attempted)
+- **TD**: Takedowns (Landed of Attempted)
+- **SUB.ATT**: Submission attempts
+- **CTRL**: Control time
+
+> [!NOTE]
+> `ufc_fight_stats.csv` is the file required to dynamically compute the 8 advanced metrics (`slpm`, `str_acc`, `sapm`, `str_def`, `td_avg`, `td_acc`, `td_def`, `sub_avg`) that are currently NULL in our database.

@@ -20,9 +20,12 @@ export function useAdmin(page: number = 1, pageSize: number = 10) {
   const documents = documentsData?.items || [];
   const totalDocuments = documentsData?.total || 0;
 
-  const { mutateAsync: seedMutateAsync, isPending: isSeeding } = useMutation({
-    mutationFn: () => fetchApi("/ingest/seed", { method: "POST" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["documents"] }),
+  const { mutateAsync: triggerUfcStatsAsync, isPending: isTriggeringUfcStats } = useMutation({
+    mutationFn: () => fetchApi("/admin/trigger/ufcstats", { method: "POST" }),
+  });
+
+  const { mutateAsync: triggerRankingsAsync, isPending: isTriggeringRankings } = useMutation({
+    mutationFn: () => fetchApi("/admin/trigger/rankings", { method: "POST" }),
   });
 
   const { mutateAsync: uploadMutateAsync, isPending: isUploading } = useMutation({
@@ -47,7 +50,8 @@ export function useAdmin(page: number = 1, pageSize: number = 10) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["documents"] }),
   });
 
-  const seedData = useCallback(() => seedMutateAsync(), [seedMutateAsync]);
+  const triggerUfcStats = useCallback(() => triggerUfcStatsAsync(), [triggerUfcStatsAsync]);
+  const triggerRankings = useCallback(() => triggerRankingsAsync(), [triggerRankingsAsync]);
   const uploadDoc = useCallback((file: File, category: string) => uploadMutateAsync({ file, category }), [uploadMutateAsync]);
   const deleteDoc = useCallback((id: string) => deleteMutateAsync(id), [deleteMutateAsync]);
   const scrapeUrl = useCallback((url: string, category: string) => scrapeMutateAsync({ url, category }), [scrapeMutateAsync]);
@@ -57,10 +61,12 @@ export function useAdmin(page: number = 1, pageSize: number = 10) {
     totalDocuments,
     isLoading,
     isFetching,
-    seeding: isSeeding,
+    triggeringUfcStats: isTriggeringUfcStats,
+    triggeringRankings: isTriggeringRankings,
     uploading: isUploading,
     loadDocuments,
-    seedData,
+    triggerUfcStats,
+    triggerRankings,
     uploadDoc,
     deleteDoc,
     scrapeUrl,

@@ -22,10 +22,11 @@ class Settings(BaseSettings):
     app_name: str = "FightIQ"
     frontend_url: str
     environment: str
-    log_level: str = "INFO"
+    log_level: str
 
     database_url: str
-    redis_url: str = "redis://localhost:6379"
+    redis_url: str
+    PARSE_API_KEY: str | None = None
 
     @property
     def get_db_config(self) -> tuple[str, dict]:

@@ -3,9 +3,11 @@
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import React from "react";
 import Image from "next/image";
-import { ExternalLink, FileText } from "lucide-react";
+import { ExternalLink, FileText, Check, Copy } from "lucide-react";
 import { ChatSource } from "@/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useSession } from "@/lib/auth-client";
@@ -16,6 +18,43 @@ export interface MessageProps {
   content: string;
   sources?: ChatSource[];
 }
+
+const CodeBlock = ({ language, value }: { language: string, value: string }) => {
+  const [copied, setCopied] = React.useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="relative group my-4 rounded-md overflow-hidden border border-border/50 shadow-sm">
+      <div className="flex items-center justify-between px-4 py-2 bg-muted/80 text-xs text-muted-foreground border-b border-border/50">
+        <span className="lowercase font-medium">{language || "text"}</span>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+          title="Copy code"
+        >
+          {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+          <span>{copied ? "Copied!" : "Copy code"}</span>
+        </button>
+      </div>
+      <div className="text-sm">
+        <SyntaxHighlighter
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          style={vscDarkPlus as any}
+          language={language}
+          PreTag="div"
+          customStyle={{ margin: 0, padding: '1rem', background: '#1e1e1e' }}
+        >
+          {value}
+        </SyntaxHighlighter>
+      </div>
+    </div>
+  );
+};
 
 export const ChatMessage = React.memo(function ChatMessage({ role, content, sources }: MessageProps) {
   const { data: session } = useSession();
@@ -50,7 +89,26 @@ export const ChatMessage = React.memo(function ChatMessage({ role, content, sour
         {/* Message Content */}
         <div className="flex-1 min-w-0 pt-0 md:pt-1">
           <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:text-foreground prose-headings:text-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground prose-strong:font-bold">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                code({ inline, className, children, ...props }: React.ComponentPropsWithoutRef<"code"> & { inline?: boolean }) {
+                  const match = /language-(\w+)/.exec(className || "");
+                  return !inline && match ? (
+                    <CodeBlock
+                      language={match[1]}
+                      value={String(children).replace(/\n$/, "")}
+                    />
+                  ) : (
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  );
+                },
+              }}
+            >
+              {content}
+            </ReactMarkdown>
           </div>
 
           {/* Source Citations */}
