@@ -29,6 +29,10 @@ class QuizService:
         self.db = db
 
     async def generate_quiz(self, request: QuizGenerateRequest, user_id: str | None = None):
+        from app.core.logging import get_logger
+        log = get_logger(__name__)
+        log.info("Starting quiz generation", topic=request.topic, difficulty=request.difficulty, num_questions=request.num_questions)
+
         query_embedding = await self.embedder.aembed_query(request.topic)
         chunks_with_scores = await self.chunk_repo.similarity_search_with_scores(
             query_embedding=query_embedding,
@@ -71,6 +75,10 @@ class QuizService:
             num_questions=request.num_questions,
             context_str=context_str,
         )
+
+        if not generated_data.questions:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=400, detail="Failed to generate any questions for the given topic. Please try a different topic or provide more context.")
 
         quiz_session = await self.repo.create_session(
             topic=generated_data.topic,

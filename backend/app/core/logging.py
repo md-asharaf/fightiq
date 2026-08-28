@@ -54,6 +54,7 @@ def configure_logging() -> None:
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("google_genai.models").setLevel(logging.ERROR)
 
 
 def get_logger(name: str) -> structlog.stdlib.BoundLogger:

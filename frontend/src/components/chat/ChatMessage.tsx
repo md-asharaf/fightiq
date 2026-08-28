@@ -77,20 +77,20 @@ export const ChatMessage = React.memo(function ChatMessage({ role, content, sour
 
   const toggleSpeech = () => {
     if (!synthRef.current) return;
-    
+
     if (isPlaying) {
       synthRef.current.cancel();
       setIsPlaying(false);
     } else {
       // Strip markdown before reading aloud
       const cleanText = content.replace(/```[\s\S]*?```/g, "Code block omitted.") // Remove code blocks
-                              .replace(/[#*`>]/g, '') // Remove markdown symbols
-                              .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1'); // Replace links with just text
+        .replace(/[#*`>]/g, '') // Remove markdown symbols
+        .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1'); // Replace links with just text
       const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.rate = 1.0;
       utterance.onend = () => setIsPlaying(false);
       utterance.onerror = () => setIsPlaying(false);
-      
+
       // Stop any current speech before starting new one
       synthRef.current.cancel();
       synthRef.current.speak(utterance);
@@ -102,38 +102,37 @@ export const ChatMessage = React.memo(function ChatMessage({ role, content, sour
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className={`w-full py-6 md:py-8 flex justify-center border-b border-border ${isUser ? 'bg-background' : 'bg-card'}`}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className={`w-full flex ${isUser ? 'justify-end' : 'justify-start'} mb-6 px-4 md:px-0`}
     >
-      <div className="flex w-full max-w-3xl space-x-4 md:space-x-6 px-4 md:px-6">
-        {/* Avatar */}
-        <div className="shrink-0 flex flex-col items-center mt-1">
-          <Avatar className="w-8 h-8 shadow-sm overflow-visible">
-            {isUser ? (
-              <>
-                <AvatarImage src={session?.user?.image || ""} alt={userName} />
-                <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-xs rounded-md w-8 h-8 flex items-center justify-center">
-                  {initials}
-                </AvatarFallback>
-              </>
-            ) : (
-              <Image src="/favicon.ico" alt="FightIQ Logo" width={32} height={32} className="object-contain" />
-            )}
-          </Avatar>
-        </div>
+      <div className={`flex w-full max-w-3xl ${isUser ? 'justify-end' : 'justify-start space-x-4 md:space-x-6'}`}>
+        {/* Assistant Avatar */}
+        {!isUser && (
+          <div className="shrink-0 flex flex-col items-center mt-1">
+            <Avatar className="w-8 h-8 md:w-10 md:h-10 shadow-sm overflow-visible bg-transparent">
+              <Image src="/favicon.ico" alt="FightIQ Logo" width={80} height={40} className="object-contain w-full h-full" />
+            </Avatar>
+          </div>
+        )}
 
-        {/* Message Content */}
-        <div className="flex-1 min-w-0 pt-0 md:pt-1 relative group">
+        {/* Message Content Bubble/Container */}
+        <div
+          className={`relative group ${isUser
+              ? 'bg-muted text-foreground px-5 py-3.5 rounded-3xl rounded-tr-sm max-w-[85%]'
+              : 'flex-1 min-w-0 pt-1'
+            }`}
+        >
           {!isUser && (
             <button
               onClick={toggleSpeech}
               className={`absolute -left-12 top-0 p-1.5 rounded-full transition-opacity ${isPlaying ? 'opacity-100 bg-primary/10 text-primary' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:bg-muted hover:text-foreground'}`}
               title={isPlaying ? "Stop reading" : "Read aloud"}
             >
-              {isPlaying ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              {isPlaying ? <VolumeX className="h-4 w-4 md:h-5 md:w-5" /> : <Volume2 className="h-4 w-4 md:h-5 md:w-5" />}
             </button>
           )}
-          <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:text-foreground prose-headings:text-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground prose-strong:font-bold">
+
+          <div className={`prose prose-sm md:prose-base dark:prose-invert max-w-none prose-p:leading-relaxed ${isUser ? 'prose-p:text-foreground' : 'prose-p:text-foreground'} prose-headings:text-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground prose-strong:font-bold`}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
@@ -160,9 +159,8 @@ export const ChatMessage = React.memo(function ChatMessage({ role, content, sour
           {!isUser && sources && sources.length > 0 && (() => {
             const uniqueSources = Array.from(new Map(sources.map(s => [s.source || s.title, s])).values());
             return (
-              <div className="mt-6 pt-4 border-t border-border/50">
+              <div className="mt-4 pt-3 border-t border-border/50">
                 <div className="flex flex-wrap gap-2 items-center">
-                  <span className="text-[11px] font-semibold tracking-wider text-muted-foreground mr-1">SOURCES:</span>
                   {uniqueSources.map((s, idx) => {
                     const isLink = s.source && s.source.startsWith("http");
                     return (
@@ -174,7 +172,7 @@ export const ChatMessage = React.memo(function ChatMessage({ role, content, sour
                         className={!isLink ? "cursor-default pointer-events-none" : ""}
                         title={s.title}
                       >
-                        <Badge variant="outline" className="flex items-center gap-1.5 rounded-full bg-muted/30 hover:bg-muted/80 text-[11px] text-foreground/80 font-normal py-1 px-2.5 transition-colors border-border/60">
+                        <Badge variant="outline" className="flex items-center gap-1.5 rounded-full bg-muted/30 hover:bg-muted/80 text-[11px] text-foreground/80 font-normal py-1 px-2 transition-colors border-border/60">
                           {isLink ? <ExternalLink className="w-3 h-3 text-muted-foreground" /> : <FileText className="w-3 h-3 text-muted-foreground" />}
                           <span className="max-w-[150px] truncate">{s.title}</span>
                         </Badge>

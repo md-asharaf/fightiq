@@ -12,11 +12,11 @@ class FighterService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def list_fighters(self, q: str | None = None, limit: int = 50) -> Sequence[Fighter]:
+    async def list_fighters(self, q: str | None = None, offset: int = 0, limit: int = 50) -> Sequence[Fighter]:
         stmt = select(Fighter).order_by(Fighter.name)
         if q:
             stmt = stmt.where(Fighter.name.ilike(f"%{q}%"))
-        stmt = stmt.limit(limit)
+        stmt = stmt.offset(offset).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 

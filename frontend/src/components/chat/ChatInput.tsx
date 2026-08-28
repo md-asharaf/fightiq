@@ -66,7 +66,7 @@ export function ChatInput({ isLoading, onSend, onStop }: ChatInputProps) {
       <div className="max-w-3xl mx-auto">
         <form
           onSubmit={handleSend}
-          className="relative flex items-end shadow rounded-full border border-border bg-card overflow-hidden focus-within:ring-1 focus-within:ring-primary/50 transition-all"
+          className="relative flex items-end shadow rounded-3xl border border-border bg-card overflow-hidden focus-within:ring-1 focus-within:ring-primary/50 transition-all"
         >
           <Textarea
             ref={textareaRef}

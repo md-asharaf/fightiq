@@ -80,24 +80,29 @@ class AgentFactory:
         tools_by_name = {t.name: t for t in self.search_tools}
 
         async def analyze_query(state: GraphState):
+            history_msgs = state.get("chat_history", [])
+            
             # Extract entities
             entity_llm = self.llm.with_structured_output(Entities)
-            entities = await entity_llm.ainvoke([HumanMessage(content=state["input"])])
+            entity_msgs = history_msgs + [HumanMessage(content=state["input"])]
+            entities = await entity_llm.ainvoke(entity_msgs)
 
             # Determine route
             route_llm = self.llm.with_structured_output(RouteDecision)
             sys_msg = SystemMessage(
                 content="""You are a routing agent for an MMA knowledge base.
-            Rules:
-            - 'db_search': queries about historical fights, stats, fighter records, height, reach.
-            - 'rag_search': queries about UFC rules, techniques, scoring criteria.
-            - 'web_search': queries about upcoming fights, recent breaking news, current rankings.
-            - 'scrape_and_ingest': queries explicitly asking to "scrape", or asking for fighter backstories, lore, controversies that wouldn't be in a stats CSV.
-            - 'multi_source': queries that need both DB stats and web news.
-            - 'direct_answer': general greetings or out-of-scope non-MMA questions."""
+Rules:
+- 'db_search': historical fights, stats, records, height, reach. (e.g. "Who has a longer reach, Jon Jones or Gane?")
+- 'rag_search': UFC rules, techniques, scoring criteria. (e.g. "What is an illegal knee?")
+- 'web_search': upcoming fights, recent breaking news, current rankings. (e.g. "Who is fighting next week?")
+- 'scrape_and_ingest': explicit "scrape" requests, fighter lore, controversies. (e.g. "Scrape Conor's backstory")
+- 'multi_source': needs both DB stats and web news. (e.g. "Compare Islam's stats to the recent news about his injury")
+- 'direct_answer': general greetings or out-of-scope non-MMA questions. (e.g. "Hello", "Write a python script")
+If ambiguous, default to 'multi_source' to ensure no data is missed."""
             )
 
-            route = await route_llm.ainvoke([sys_msg, HumanMessage(content=state["input"])])
+            route_msgs = [sys_msg] + history_msgs + [HumanMessage(content=state["input"])]
+            route = await route_llm.ainvoke(route_msgs)
 
             # Handle type union (dict vs BaseModel) depending on LLM provider support
             entities_dict: dict[str, Any] = {}
@@ -113,6 +118,10 @@ class AgentFactory:
                 route_val = route.route
             elif isinstance(route, dict):
                 route_val = route.get("route", "direct_answer")
+
+            from app.core.logging import get_logger
+            log = get_logger(__name__)
+            log.info("Query analysis complete", route=route_val, entities=entities_dict)
 
             return {"entities": entities_dict, "route": route_val}
 
@@ -196,20 +205,32 @@ class AgentFactory:
             web_res = await web_search(state)
             rag_res = await rag_search(state)
 
-            all_evidence = (
-                db_res.get("evidence", [])
-                + web_res.get("evidence", [])
-                + rag_res.get("evidence", [])
-            )
+            # Strict budget to avoid token limit overload
+            MAX_EVIDENCE_LENGTH = 3000
+            
+            db_evidence = db_res.get("evidence", [])
+            web_evidence = [e[:MAX_EVIDENCE_LENGTH] + "... (truncated)" if len(e) > MAX_EVIDENCE_LENGTH else e for e in web_res.get("evidence", [])]
+            rag_evidence = [e[:MAX_EVIDENCE_LENGTH] + "... (truncated)" if len(e) > MAX_EVIDENCE_LENGTH else e for e in rag_res.get("evidence", [])]
+
+            all_evidence = db_evidence + web_evidence + rag_evidence
             all_citations = rag_res.get("citations", [])
             return {"evidence": all_evidence, "citations": all_citations}
 
         async def generate_answer(state: GraphState):
             sys_msg = SystemMessage(
-                content="""You are FightIQ, an elite MMA analyst.
-            Use the provided evidence to answer the user's question.
-            If no evidence is provided or it doesn't answer the question, state what you know or what is missing.
-            Use Markdown formatting. No AI cliches."""
+                content="""You are FightIQ, an elite, professional MMA analyst and statistician.
+
+CRITICAL DIRECTIVES:
+1. MMA FOCUS ONLY: You must ONLY answer questions related to Mixed Martial Arts (MMA), UFC, combat sports, fighters, and related news. 
+2. OUT OF SCOPE: If a user asks about anything else (e.g., coding, general history, math, writing a poem), you MUST politely refuse and state that you are an MMA analyst and cannot answer that.
+3. NO HALLUCINATIONS: NEVER invent, guess, or hallucinate fighter statistics, records, heights, reaches, or fight outcomes. If you don't know a fact, admit it.
+4. NO META-LANGUAGE: NEVER mention the words "evidence", "dataset", "context", "provided text", or explain your internal mechanics. Speak directly to the user as an expert.
+
+Formatting rules:
+- Use clean, modern Markdown.
+- When comparing stats between two or more fighters, ALWAYS use a Markdown table for easy reading.
+- Avoid generic AI cliches like "In conclusion" or "As an AI".
+- Adopt an objective, authoritative, and deeply analytical tone."""
             )
 
             evidence_text = "\n\n".join(state.get("evidence", []))
@@ -219,7 +240,7 @@ class AgentFactory:
 
             messages = [sys_msg] + state.get("chat_history", []) + [context_msg]
             # Invoke the LLM directly so it streams back on_chat_model_stream
-            response = await self.llm.ainvoke(messages)
+            response = await self.llm.ainvoke(messages, config={"tags": ["final_answer"]})
             return {"output": response.content}
 
         workflow = StateGraph(GraphState)

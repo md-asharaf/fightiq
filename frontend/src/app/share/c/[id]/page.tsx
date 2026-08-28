@@ -27,7 +27,7 @@ export default function SharedChatPage() {
     return (
       <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-4 text-center">
         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-6">
-          <Image src="/favicon.ico" alt="FightIQ Logo" width={32} height={32} className="opacity-50 grayscale" />
+          <Image src="/favicon.ico" alt="FightIQ Logo" width={80} height={40} />
         </div>
         <h1 className="text-2xl font-bold mb-2">Chat Not Found</h1>
         <p className="text-muted-foreground mb-8 max-w-md">
@@ -46,7 +46,7 @@ export default function SharedChatPage() {
       <div className="w-full bg-card border-b border-border p-4 sticky top-0 z-10 shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/">
-            <Image src="/favicon.ico" alt="FightIQ Logo" width={32} height={32} />
+            <Image src="/favicon.ico" alt="FightIQ Logo" width={80} height={40} />
           </Link>
           <div>
             <h1 className="font-bold text-sm leading-tight">Shared Chat Session</h1>
@@ -67,10 +67,10 @@ export default function SharedChatPage() {
           <ChatMessage key={idx} {...msg} />
         ))}
       </div>
-      
+
       {/* Footer CTA (Mobile) */}
       <div className="sm:hidden p-4 border-t border-border bg-card text-center">
-         <Link href="/chat">
+        <Link href="/chat">
           <Button className="w-full gap-2">
             <MessageSquarePlus className="h-4 w-4" />
             Start Your Own Chat

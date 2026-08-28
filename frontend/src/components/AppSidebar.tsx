@@ -64,7 +64,7 @@ export function AppSidebar() {
     <Sidebar className="border-border">
       <SidebarHeader className="h-14 flex items-center justify-center border-b border-border px-4 py-0 shrink-0 flex-row">
         <Link href="/" className="flex items-center w-full justify-center">
-          <Image src="/favicon.ico" alt="FightIQ Logo" width={40} height={40} className="object-contain" />
+          <Image src="/favicon.ico" alt="FightIQ Logo" width={80} height={40} className="object-contain" />
         </Link>
       </SidebarHeader>
       <SidebarContent className="px-4 pt-4">
@@ -109,7 +109,7 @@ export function AppSidebar() {
                     <SidebarMenuButton isActive={pathname?.startsWith("/eval")}>
                       <Link href="/eval" className="flex items-center space-x-3">
                         <BarChart2 className="h-4 w-4" />
-                        <span>Eval</span>
+                        <span>Evaluate</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

@@ -20,22 +20,22 @@ import { Skull, Shield, Target, GraduationCap } from "lucide-react";
 const difficultyMeta = {
   beginner: {
     color: "border-green-500 text-green-500",
-    icon: <GraduationCap className="h-5 w-5" />,
+    icon: <GraduationCap className="h-5 w-5 md:h-6 md:w-6" />,
     desc: "Direct and factual questions. Options are easy to distinguish. Perfect for casual fans."
   },
   intermediate: {
     color: "border-blue-500 text-blue-500",
-    icon: <Shield className="h-5 w-5" />,
+    icon: <Shield className="h-5 w-5 md:h-6 md:w-6" />,
     desc: "Analytical and situational questions. Requires good understanding of the sport."
   },
   expert: {
     color: "border-orange-500 text-orange-500",
-    icon: <Target className="h-5 w-5" />,
+    icon: <Target className="h-5 w-5 md:h-6 md:w-6" />,
     desc: "Highly specific trivia and technical stats. Watch out for tricky 'trap' options!"
   },
   hardcore: {
     color: "border-red-600 text-red-600 bg-red-950/20",
-    icon: <Skull className="h-5 w-5" />,
+    icon: <Skull className="h-5 w-5 md:h-6 md:w-6" />,
     desc: "Punishingly difficult. Obscure history and deep analytics. Wrong answers look totally correct."
   }
 };
@@ -68,19 +68,19 @@ export function QuizSetupView() {
   return (
     <div className="flex-1 bg-background text-foreground min-h-full">
       <div className="container mx-auto p-4 md:p-8 max-w-5xl space-y-12 pt-12 pb-32">
-        <div className="border-b border-border pb-6">
-          <h1 className="text-4xl font-bold tracking-tighter text-foreground">Quiz Engine</h1>
-          <p className="text-muted-foreground font-medium text-sm mt-3">Test your UFC knowledge against our Generative AI.</p>
+        <div className="border-b-4 border-foreground pb-6">
+          <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-foreground">Quiz Engine</h1>
+          <p className="text-muted-foreground font-bold text-sm md:text-base mt-3 uppercase tracking-wider">Test your MMA knowledge against the AI.</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
-          <Card className="bg-card border-primary/20 shadow-sm rounded-none">
-            <CardHeader className="border-b border-border bg-muted/30">
-              <CardTitle className="flex items-center gap-3 text-2xl font-bold tracking-tighter text-foreground">
-                <BrainCircuit className="h-8 w-8 text-primary" />
+          <Card className="bg-card border-2 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.05)] rounded-none">
+            <CardHeader className="border-b-2 border-border bg-muted/50 p-6">
+              <CardTitle className="flex items-center gap-3 text-2xl md:text-3xl font-black tracking-tighter uppercase text-foreground">
+                <BrainCircuit className="h-6 w-6 md:h-8 md:w-8 text-red-600" />
                 Generate New Quiz
               </CardTitle>
-              <CardDescription className="text-muted-foreground font-medium mt-2">
+              <CardDescription className="text-muted-foreground font-bold uppercase text-xs tracking-wider mt-2">
                 The AI will read the knowledge base and dynamically create a 5-question quiz.
               </CardDescription>
             </CardHeader>
@@ -98,16 +98,16 @@ export function QuizSetupView() {
                   />
                 </div>
                 <div className="space-y-3">
-                  <Label htmlFor="difficulty" className="text-xs font-bold text-muted-foreground">Difficulty</Label>
+                  <Label htmlFor="difficulty" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Difficulty</Label>
                   <Select name="difficulty" value={selectedDifficulty} onValueChange={(val) => val && setSelectedDifficulty(val)}>
-                    <SelectTrigger id="difficulty" className="bg-background border-border text-foreground h-12 rounded-none focus:ring-primary">
+                    <SelectTrigger id="difficulty" className="bg-background border-2 border-border text-foreground h-14 text-base font-bold rounded-none focus:ring-0 focus:border-red-600 transition-colors">
                       <SelectValue placeholder="Select difficulty" />
                     </SelectTrigger>
-                    <SelectContent className="bg-background border-border text-foreground rounded-none">
-                      <SelectItem value="beginner" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer">Beginner</SelectItem>
-                      <SelectItem value="intermediate" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer">Intermediate</SelectItem>
-                      <SelectItem value="expert" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer">Expert</SelectItem>
-                      <SelectItem value="hardcore" className="focus:bg-primary focus:text-primary-foreground rounded-none cursor-pointer text-destructive font-bold">Hardcore</SelectItem>
+                    <SelectContent className="bg-background border-2 border-border text-foreground rounded-none shadow-none">
+                      <SelectItem value="beginner" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer font-bold uppercase tracking-wider">Beginner</SelectItem>
+                      <SelectItem value="intermediate" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer font-bold uppercase tracking-wider">Intermediate</SelectItem>
+                      <SelectItem value="expert" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer font-bold uppercase tracking-wider">Expert</SelectItem>
+                      <SelectItem value="hardcore" className="focus:bg-red-600 focus:text-white rounded-none cursor-pointer text-destructive font-black uppercase tracking-wider">Hardcore</SelectItem>
                     </SelectContent>
                   </Select>
                   
@@ -123,13 +123,13 @@ export function QuizSetupView() {
                 </div>
               </form>
             </CardContent>
-            <CardFooter className="bg-muted/30 pt-6 border-t border-border">
-              <Button type="submit" form="quiz-form" disabled={loading || !session} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-14 font-bold rounded-none text-lg">
+            <CardFooter className="bg-muted/50 p-6 border-t-2 border-border">
+              <Button type="submit" form="quiz-form" disabled={loading || !session} className="w-full bg-red-600 hover:bg-red-700 text-white h-16 font-black uppercase tracking-widest rounded-none text-lg transition-colors">
                 {!session ? (
                   "Login to Generate Quiz"
                 ) : loading ? (
                   <>
-                    <Loader2 className="mr-3 h-5 w-5 animate-spin" /> Generating...
+                    <Loader2 className="mr-2 md:mr-3 h-5 w-5 md:h-6 md:w-6 animate-spin" /> Preparing Octagon...
                   </>
                 ) : (
                   "Generate Quiz"
@@ -138,10 +138,10 @@ export function QuizSetupView() {
             </CardFooter>
           </Card>
 
-          <Card className="bg-card border-border shadow-sm rounded-none flex flex-col">
-            <CardHeader className="border-b border-border bg-muted/30">
-              <CardTitle className="text-2xl font-bold tracking-tighter text-foreground">Recent Quizzes</CardTitle>
-              <CardDescription className="text-muted-foreground font-medium mt-2">Jump back into a quiz or review your results.</CardDescription>
+          <Card className="bg-card border-2 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.05)] rounded-none flex flex-col">
+            <CardHeader className="border-b-2 border-border bg-muted/50 p-6">
+              <CardTitle className="text-2xl md:text-3xl font-black tracking-tighter uppercase text-foreground">Recent Quizzes</CardTitle>
+              <CardDescription className="text-muted-foreground font-bold uppercase text-xs tracking-wider mt-2">Jump back into a quiz or review your results.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 p-0">
               <div className="border-0 overflow-x-auto">
@@ -155,11 +155,11 @@ export function QuizSetupView() {
                   </TableHeader>
                   <TableBody>
                     {loadingSessions ? (
-                      Array.from({ length: 3 }).map((_, i) => (
+                      Array.from({ length: 4 }).map((_, i) => (
                         <TableRow key={`skeleton-${i}`} className="border-border hover:bg-transparent">
-                          <TableCell><Skeleton className="h-4 w-32 rounded" /></TableCell>
-                          <TableCell><Skeleton className="h-5 w-24 rounded-full" /></TableCell>
-                          <TableCell className="text-right pr-6"><Skeleton className="h-8 w-16 ml-auto rounded" /></TableCell>
+                          <TableCell><Skeleton className="h-5 w-32 rounded-none bg-muted-foreground/20" /></TableCell>
+                          <TableCell><Skeleton className="h-6 w-24 rounded-none bg-muted-foreground/20" /></TableCell>
+                          <TableCell className="text-right pr-6"><Skeleton className="h-8 w-20 ml-auto rounded-none bg-muted-foreground/20" /></TableCell>
                         </TableRow>
                       ))
                     ) : sessions.length === 0 ? (

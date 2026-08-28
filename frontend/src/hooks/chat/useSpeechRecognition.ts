@@ -5,28 +5,35 @@ export function useSpeechRecognition(onResult: (text: string) => void) {
   const [speechSupported, setSpeechSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
+  const onResultRef = useRef(onResult);
   useEffect(() => {
+    onResultRef.current = onResult;
+  }, [onResult]);
+
+  useEffect(() => {
+    let recognition: any = null;
     if (typeof window !== "undefined") {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = true;
-        recognitionRef.current.interimResults = true;
+        recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+        recognition.continuous = true;
+        recognition.interimResults = true;
         
-        recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+        recognition.onresult = (event: any) => {
           let currentTranscript = "";
           for (let i = 0; i < event.results.length; i++) {
             currentTranscript += event.results[i][0].transcript;
           }
-          onResult(currentTranscript);
+          onResultRef.current(currentTranscript);
         };
         
-        recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
+        recognition.onerror = (event: any) => {
           console.error("Speech recognition error", event.error);
           setIsListening(false);
         };
         
-        recognitionRef.current.onend = () => {
+        recognition.onend = () => {
           setIsListening(false);
         };
         
@@ -35,7 +42,12 @@ export function useSpeechRecognition(onResult: (text: string) => void) {
         }, 0);
       }
     }
-  }, [onResult]);
+    return () => {
+      if (recognition) {
+        recognition.stop();
+      }
+    };
+  }, []);
 
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {

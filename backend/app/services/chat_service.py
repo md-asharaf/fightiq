@@ -61,6 +61,8 @@ class ChatService:
         await self.repo.add_message(chat_session.id, "user", message)
         await self.db.commit()
 
+        log.info("Processing incoming chat message", session_id=session_id_str, message_preview=message[:50])
+
         if stream:
             return self._stream_response(chat_session.id, message, history, filters)
 
@@ -130,7 +132,7 @@ class ChatService:
                         sources.extend(citations)
                         payload = json.dumps({"type": "sources", "sources": citations})
                         yield f"data: {payload}\n\n"
-                elif kind == "on_chat_model_stream":
+                elif kind == "on_chat_model_stream" and "final_answer" in event.get("tags", []):
                     chunk_content = event["data"]["chunk"].content
                     if isinstance(chunk_content, list):
                         chunk_str = "".join(

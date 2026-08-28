@@ -33,14 +33,21 @@ class ComparisonResponse(BaseModel):
     fighter1: FighterDetailed
     fighter2: FighterDetailed
 
-@router.get("/", response_model=list[FighterBasic])
+class PaginatedFighterResponse(BaseModel):
+    fighters: list[FighterBasic]
+    next_offset: int | None = None
+
+@router.get("/", response_model=PaginatedFighterResponse)
 async def list_fighters(
     q: str | None = None,
+    offset: int = 0,
     limit: int = 50,
     fighter_service: FighterService = Depends(get_fighter_service)
 ):
-    """Return a lightweight list of fighters for autocomplete/dropdowns."""
-    return await fighter_service.list_fighters(q, limit)
+    """Return a lightweight paginated list of fighters for autocomplete/dropdowns."""
+    results = await fighter_service.list_fighters(q, offset, limit)
+    next_offset = offset + limit if len(results) == limit else None
+    return PaginatedFighterResponse(fighters=list(results), next_offset=next_offset)
 
 @router.get("/compare", response_model=ComparisonResponse)
 async def compare_fighters(

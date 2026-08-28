@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { fetchApi } from "@/lib/api";
 
 export interface FighterBasic {
@@ -23,13 +23,21 @@ export interface ComparisonResponse {
   fighter2: FighterBasic;
 }
 
-export function useFightersList() {
-  return useQuery<FighterBasic[]>({
-    queryKey: ["fighters", "list"],
-    queryFn: async () => {
-      const res = await fetchApi("/fighters?limit=200");
+export interface PaginatedFighterResponse {
+  fighters: FighterBasic[];
+  next_offset: number | null;
+}
+
+export function useInfiniteFightersList(searchQuery: string = "") {
+  return useInfiniteQuery<PaginatedFighterResponse>({
+    queryKey: ["fighters", "list", "infinite", searchQuery],
+    queryFn: async ({ pageParam = 0 }) => {
+      const query = searchQuery ? `&q=${encodeURIComponent(searchQuery)}` : "";
+      const res = await fetchApi(`/fighters?limit=50&offset=${pageParam}${query}`);
       return res.data;
     },
+    getNextPageParam: (lastPage) => lastPage.next_offset,
+    initialPageParam: 0,
     staleTime: 5 * 60 * 1000,
   });
 }
