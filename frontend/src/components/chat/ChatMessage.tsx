@@ -9,7 +9,7 @@ import React from "react";
 import Image from "next/image";
 import { ExternalLink, FileText, Check, Copy, Volume2, VolumeX } from "lucide-react";
 import { ChatSource } from "@/types";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
 import { useSession } from "@/lib/auth-client";
 import { Badge } from "@/components/ui/badge";
 
@@ -59,7 +59,7 @@ export const ChatMessage = React.memo(function ChatMessage({ role, content, sour
   const { data: session } = useSession();
   const isUser = role === "user";
   const userName = session?.user?.name || "User";
-  const initials = userName.substring(0, 2).toUpperCase();
+
 
   const [isPlaying, setIsPlaying] = React.useState(false);
   const synthRef = React.useRef<SpeechSynthesis | null>(null);

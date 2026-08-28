@@ -69,7 +69,7 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
 
     import urllib.parse
     token = urllib.parse.unquote(token)
-    
+
     if "." in token:
         token = token.split(".")[0]
 

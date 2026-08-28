@@ -237,11 +237,11 @@ async def run_etl(force: bool = False) -> None:
                 "source_url": url or None,
                 "profile_url": url or None,
             }
-            
+
             for k, v in fdata.items():
                 if isinstance(v, str) and v.strip() in ("", "--", "N/A", "null", "None"):
                     fdata[k] = None
-                    
+
             rec = records.get(name, {})
             if "wins" in rec:
                 fdata["wins"] = rec["wins"]

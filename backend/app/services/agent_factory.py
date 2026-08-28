@@ -81,7 +81,7 @@ class AgentFactory:
 
         async def analyze_query(state: GraphState):
             history_msgs = state.get("chat_history", [])
-            
+
             # Extract entities
             entity_llm = self.llm.with_structured_output(Entities)
             entity_msgs = history_msgs + [HumanMessage(content=state["input"])]
@@ -206,11 +206,11 @@ If ambiguous, default to 'multi_source' to ensure no data is missed."""
             rag_res = await rag_search(state)
 
             # Strict budget to avoid token limit overload
-            MAX_EVIDENCE_LENGTH = 3000
-            
+            max_evidence_length = 3000
+
             db_evidence = db_res.get("evidence", [])
-            web_evidence = [e[:MAX_EVIDENCE_LENGTH] + "... (truncated)" if len(e) > MAX_EVIDENCE_LENGTH else e for e in web_res.get("evidence", [])]
-            rag_evidence = [e[:MAX_EVIDENCE_LENGTH] + "... (truncated)" if len(e) > MAX_EVIDENCE_LENGTH else e for e in rag_res.get("evidence", [])]
+            web_evidence = [e[:max_evidence_length] + "... (truncated)" if len(e) > max_evidence_length else e for e in web_res.get("evidence", [])]
+            rag_evidence = [e[:max_evidence_length] + "... (truncated)" if len(e) > max_evidence_length else e for e in rag_res.get("evidence", [])]
 
             all_evidence = db_evidence + web_evidence + rag_evidence
             all_citations = rag_res.get("citations", [])
@@ -221,7 +221,7 @@ If ambiguous, default to 'multi_source' to ensure no data is missed."""
                 content="""You are FightIQ, an elite, professional MMA analyst and statistician.
 
 CRITICAL DIRECTIVES:
-1. MMA FOCUS ONLY: You must ONLY answer questions related to Mixed Martial Arts (MMA), UFC, combat sports, fighters, and related news. 
+1. MMA FOCUS ONLY: You must ONLY answer questions related to Mixed Martial Arts (MMA), UFC, combat sports, fighters, and related news.
 2. OUT OF SCOPE: If a user asks about anything else (e.g., coding, general history, math, writing a poem), you MUST politely refuse and state that you are an MMA analyst and cannot answer that.
 3. NO HALLUCINATIONS: NEVER invent, guess, or hallucinate fighter statistics, records, heights, reaches, or fight outcomes. If you don't know a fact, admit it.
 4. NO META-LANGUAGE: NEVER mention the words "evidence", "dataset", "context", "provided text", or explain your internal mechanics. Speak directly to the user as an expert.

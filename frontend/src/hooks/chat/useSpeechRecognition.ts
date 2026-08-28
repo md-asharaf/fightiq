@@ -11,6 +11,7 @@ export function useSpeechRecognition(onResult: (text: string) => void) {
   }, [onResult]);
 
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let recognition: any = null;
     if (typeof window !== "undefined") {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -20,6 +21,7 @@ export function useSpeechRecognition(onResult: (text: string) => void) {
         recognition.continuous = true;
         recognition.interimResults = true;
         
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         recognition.onresult = (event: any) => {
           let currentTranscript = "";
           for (let i = 0; i < event.results.length; i++) {
@@ -28,6 +30,7 @@ export function useSpeechRecognition(onResult: (text: string) => void) {
           onResultRef.current(currentTranscript);
         };
         
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         recognition.onerror = (event: any) => {
           console.error("Speech recognition error", event.error);
           setIsListening(false);

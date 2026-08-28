@@ -2,20 +2,18 @@
 
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 export function AdminGuard({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = useSession();
   const router = useRouter();
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const isAuthorized = !isPending && session && session.user.role === "admin";
 
   useEffect(() => {
     if (isPending) return;
 
     if (!session || session.user.role !== "admin") {
       router.replace("/");
-    } else {
-      setIsAuthorized(true);
     }
   }, [session, isPending, router]);
 

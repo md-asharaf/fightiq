@@ -40,18 +40,18 @@ class DatabaseToolService:
             await self.db.commit()
 
     async def _build_fighter_match_condition(self, name: str):
-        from sqlalchemy import or_, and_
+        from sqlalchemy import or_
         words = [w for w in name.split() if len(w) > 2]
         if not words:
             return Fighter.name.ilike(f"%{name}%")
-        
+
         conditions = []
         for word in words:
             conditions.append(Fighter.name.ilike(f"%{word}%"))
             conditions.append(Fighter.nickname.ilike(f"%{word}%"))
             conditions.append(Fighter.first_name.ilike(f"%{word}%"))
             conditions.append(Fighter.last_name.ilike(f"%{word}%"))
-        
+
         return or_(*conditions)
 
     async def get_fighter_stats(self, name: str) -> dict | None:

@@ -17,7 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useInfiniteFightersList, FighterBasic } from "@/hooks/compare/useCompareFighters";
+import { useInfiniteFightersList } from "@/hooks/compare/useCompareFighters";
 
 export function FighterSelect({
   value,
